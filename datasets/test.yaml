@@ -1,0 +1,24 @@
+# test.yaml
+#
+# 每条用例: id / type / prompt / (toolsets) / graders[]
+#   id        唯一, 决定产物文件名
+#   type      仅用于报告分组 (qa / tool_use / task)
+#   prompt    喂给 hermes chat -q 的内容
+#   toolsets  可选, 映射到 hermes -t (注意: skill 工具集名是 `skills` 复数!)
+#   graders[] 一条用例可挂多个 grader, 全 pass 才算整体 pass
+#
+# Grader kinds:
+#   tool_call: must_call / must_call_any / must_not_call / args_match / expect_success
+#   timing:    max_seconds / max_api_calls / max_tool_calls / max_output_tokens /
+#              max_total_tokens / max_cost_usd
+#   llm_judge: rubric / pass_threshold / model
+
+- id: example-qa
+  type: qa
+  prompt: "用一句话回答：1+1 等于几？"
+  graders:
+    - kind: timing
+      max_seconds: 60
+    - kind: llm_judge
+      rubric: "回答是否正确（结果为 2）且简洁。"
+      pass_threshold: 7

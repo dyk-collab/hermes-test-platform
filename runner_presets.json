@@ -1,0 +1,13 @@
+{
+  "quick": {
+    "model": null,
+    "provider": null,
+    "profile": null,
+    "toolsets": null,
+    "max_turns": 15,
+    "timeout": 180.0,
+    "yolo": true,
+    "accept_hooks": true,
+    "ignore_rules": true
+  }
+}

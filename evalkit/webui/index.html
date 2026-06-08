@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hermes 测评控制台</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">🧪 Hermes 测评控制台</div>
+    <nav class="nav" id="nav">
+      <button class="nav-btn active" data-view="eval">评测</button>
+      <button class="nav-btn" data-view="dataset">数据集</button>
+      <button class="nav-btn" data-view="preset">预设</button>
+      <button class="nav-btn" data-view="history">历史</button>
+    </nav>
+    <div class="hint" id="conn-hint">就绪</div>
+  </header>
+
+  <!-- ===== 评测视图：发起 + 实时进度 ===== -->
+  <div class="view active" id="view-eval">
+    <div class="layout">
+      <aside class="sidebar">
+        <section class="card">
+          <h2>发起评测</h2>
+          <label class="field">
+            <span>数据集</span>
+            <select id="dataset-select"></select>
+          </label>
+          <label class="field">
+            <span>运行预设 <em class="muted">（runner 参数，去「预设」页管理）</em></span>
+            <select id="preset-select"></select>
+          </label>
+          <div id="preset-summary" class="preset-summary muted"></div>
+          <label class="field">
+            <span>模型 <em class="muted">（留空＝用预设/默认；填则覆盖本次）</em></span>
+            <input id="model-input" type="text" placeholder="例如 anthropic/claude-sonnet-4.6" />
+          </label>
+          <button id="run-btn" class="btn primary">▶ 运行评测</button>
+          <p class="tip">提示：评测会逐条调用 hermes，可能耗时；进度实时显示在右侧，完成后自动跳到「历史」看报告。</p>
+        </section>
+      </aside>
+
+      <main class="content">
+        <section id="progress-panel" class="card hidden">
+          <h2>运行进度 <span id="progress-status" class="badge">运行中</span></h2>
+          <div id="progress-log" class="log"></div>
+        </section>
+        <section id="eval-empty" class="card empty">
+          <p>选择数据集并点击「运行评测」开始。还没有数据集？去「数据集」页用引导构建一个。</p>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- ===== 数据集视图：引导式 YAML 构建 ===== -->
+  <div class="view" id="view-dataset">
+    <div class="ds-layout">
+      <!-- 左：文件列表 -->
+      <aside class="ds-files card">
+        <h2>数据集 <button id="ds-new" class="btn tiny" title="新建">＋</button></h2>
+        <div id="ds-new-row" class="ds-new-row hidden">
+          <input id="ds-new-name" type="text" placeholder="名称，如 my_eval.yaml" />
+          <button id="ds-new-ok" class="btn tiny primary-inline">建</button>
+          <button id="ds-new-cancel" class="btn tiny">✕</button>
+        </div>
+        <ul id="ds-list" class="runs-list"><li class="muted">加载中…</li></ul>
+      </aside>
+
+      <!-- 中：YAML 编辑器 -->
+      <section class="ds-editor card">
+        <div class="ds-editor-head">
+          <h2 id="ds-editor-title">选择或新建一个数据集</h2>
+          <button id="ds-save" class="btn primary" disabled>💾 保存</button>
+        </div>
+        <div id="ds-validate" class="validate-bar muted">—</div>
+        <textarea id="ds-text" class="yaml-editor" spellcheck="false"
+                  placeholder="从左侧选择数据集，或点 ＋ 新建。YAML 是权威源，右侧引导面板帮你拼片段。"
+                  disabled></textarea>
+      </section>
+
+      <!-- 右：引导面板 -->
+      <aside class="ds-guide card">
+        <h2>引导构建</h2>
+
+        <div class="guide-sec">
+          <h3>① 插入用例模板</h3>
+          <div id="guide-cases" class="chip-row"></div>
+        </div>
+
+        <div class="guide-sec">
+          <h3>② 添加 Grader</h3>
+          <div id="guide-graders" class="grader-templates"></div>
+        </div>
+
+        <div class="guide-sec">
+          <h3>③ Toolsets 速查 <em class="muted">点击插入名称</em></h3>
+          <div id="guide-toolsets" class="chip-row"></div>
+        </div>
+
+        <div class="guide-sec">
+          <h3>④ 试跑 → 转断言</h3>
+          <textarea id="try-prompt" class="try-prompt" rows="3"
+                    placeholder="随手输入一个 prompt 试跑，看 Agent 真实轨迹，再把观察到的 tool_call 一键加为断言。"></textarea>
+          <label class="field">
+            <span>toolsets <em class="muted">逗号分隔，可空</em></span>
+            <input id="try-toolsets" type="text" placeholder="skills" />
+          </label>
+          <button id="try-btn" class="btn">⚡ 试跑</button>
+          <div id="try-result" class="try-result"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ===== 预设视图：自定义 runner 参数 ===== -->
+  <div class="view" id="view-preset">
+    <div class="layout">
+      <aside class="sidebar">
+        <section class="card grow">
+          <h2>运行预设 <button id="ps-new" class="btn tiny" title="新建">＋</button></h2>
+          <div id="ps-new-row" class="ds-new-row hidden">
+            <input id="ps-new-name" type="text" placeholder="预设名，如 fast / 严格" />
+            <button id="ps-new-ok" class="btn tiny primary-inline">建</button>
+            <button id="ps-new-cancel" class="btn tiny">✕</button>
+          </div>
+          <ul id="ps-list" class="runs-list"><li class="muted">加载中…</li></ul>
+        </section>
+      </aside>
+
+      <main class="content">
+        <section id="ps-editor" class="card hidden">
+          <div class="report-head">
+            <h2 id="ps-editor-title">预设</h2>
+            <button id="ps-save" class="btn primary">💾 保存</button>
+          </div>
+          <div class="ps-grid">
+            <label class="field">
+              <span>model <em class="muted">留空＝用 hermes 默认</em></span>
+              <input id="ps-model" type="text" placeholder="anthropic/claude-sonnet-4.6" />
+            </label>
+            <label class="field">
+              <span>provider</span>
+              <input id="ps-provider" type="text" placeholder="留空＝默认" />
+            </label>
+            <label class="field">
+              <span>profile <em class="muted">隔离的 hermes 实例</em></span>
+              <input id="ps-profile" type="text" placeholder="留空＝主 profile" />
+            </label>
+            <label class="field">
+              <span>toolsets 覆盖 <em class="muted">逗号分隔，覆盖用例</em></span>
+              <input id="ps-toolsets" type="text" placeholder="留空＝用用例自带" />
+            </label>
+            <label class="field">
+              <span>max_turns <em class="muted">最大工具迭代轮</em></span>
+              <input id="ps-max-turns" type="number" min="1" placeholder="留空＝默认" />
+            </label>
+            <label class="field">
+              <span>timeout（秒）</span>
+              <input id="ps-timeout" type="number" min="1" placeholder="600" />
+            </label>
+          </div>
+          <div class="ps-flags">
+            <label class="check"><input type="checkbox" id="ps-yolo" /> --yolo <em class="muted">跳过危险命令审批</em></label>
+            <label class="check"><input type="checkbox" id="ps-accept-hooks" /> --accept-hooks <em class="muted">自动批准 shell hooks</em></label>
+            <label class="check"><input type="checkbox" id="ps-ignore-rules" /> --ignore-rules <em class="muted">干净评测环境</em></label>
+          </div>
+        </section>
+        <section id="ps-empty" class="card empty">
+          <p>从左侧选择一个预设编辑，或点 ＋ 新建。预设是一组命名的 runner 参数，发起评测时下拉选用。</p>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- ===== 历史视图：运行列表 + 报告 ===== -->
+  <div class="view" id="view-history">
+    <div class="layout">
+      <aside class="sidebar">
+        <section class="card grow">
+          <h2>历史运行 <button id="refresh-runs" class="btn tiny" title="刷新">↻</button></h2>
+          <ul id="runs-list" class="runs-list"><li class="muted">加载中…</li></ul>
+        </section>
+      </aside>
+
+      <main class="content">
+        <section id="report-panel" class="card hidden">
+          <div class="report-head">
+            <h2 id="report-title">评测报告</h2>
+            <div class="report-meta" id="report-meta"></div>
+            <button id="regrade-btn" class="btn">↻ 重新打分</button>
+          </div>
+          <div id="report-summary" class="summary"></div>
+          <table class="cases-table">
+            <thead>
+              <tr>
+                <th>用例</th><th>类型</th><th>结果</th><th>评分项</th>
+                <th>耗时</th><th>工具</th><th>API</th><th>tokens</th><th>成本</th>
+              </tr>
+            </thead>
+            <tbody id="cases-tbody"></tbody>
+          </table>
+          <p class="tip">点击任意用例行可查看完整交互轨迹。</p>
+        </section>
+        <section id="history-empty" class="card empty">
+          <p>从左侧选择一次历史运行查看报告。</p>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- 轨迹抽屉（全局） -->
+  <div id="drawer-overlay" class="drawer-overlay hidden"></div>
+  <aside id="drawer" class="drawer hidden">
+    <div class="drawer-head">
+      <h2 id="drawer-title">交互轨迹</h2>
+      <button id="drawer-close" class="btn tiny">✕ 关闭</button>
+    </div>
+    <div id="drawer-meta" class="drawer-meta"></div>
+    <div id="drawer-graders" class="drawer-graders"></div>
+    <div id="drawer-messages" class="messages"></div>
+  </aside>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+# 最小冒烟数据集 — 1 条便宜用例，用于验证 Web 触发评测链路。
+- id: smoke-qa
+  type: qa
+  prompt: "用一句话回答：3 乘以 4 等于几？"
+  graders:
+    - kind: timing
+      max_seconds: 60
+    - kind: llm_judge
+      rubric: "回答是否正确（结果为 12）且简洁。"
+      pass_threshold: 7
