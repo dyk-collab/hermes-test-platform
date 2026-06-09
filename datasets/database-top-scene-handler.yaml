@@ -13,7 +13,7 @@
 
 - id: cpu-instance-name-exact-time
   type: tool_use
-  prompt: "请帮我诊断实例 payment-prod-mysql 在 2026-06-08 14:35 出现的 CPU 使用率持续 95% 问题。"
+  prompt: "请帮我诊断实例 rds-aiops-0001 在 2026-06-08 14:35 出现的 CPU 使用率持续 95% 问题。"
   graders: &complete_graders
     - kind: tool_call
       must_call: skill_view
@@ -29,117 +29,117 @@
 
 - id: cpu-instance-id-time-range
   type: tool_use
-  prompt: "实例 ID rm-bp1a2b3c4d5e6f7g 在 2026-06-07 09:10 到 09:40 之间 CPU 突然打满了，帮我分析原因。"
+  prompt: "实例 ID rds-aiops-0001 在 2026-06-07 09:10 到 09:40 之间 CPU 突然打满了，帮我分析原因。"
   graders: *complete_graders
 
 - id: cpu-colloquial-spike
   type: tool_use
-  prompt: "昨天晚上 22:15 左右，订单库实例 order-db-prod 的 CPU 一直飙到 100%，麻烦排查一下。"
+  prompt: "昨天晚上 22:15 左右，实例 rds-aiops-0001 的 CPU 一直飙到 100%，麻烦排查一下。"
   graders: *complete_graders
 
 - id: cpu-intermittent
   type: tool_use
-  prompt: "诊断一下实例 rm-2ze8x7y6w5v4u3t2，2026-06-06 16:00 至 17:00 CPU 周期性升高的问题。"
+  prompt: "诊断一下实例 rds-aiops-0001，2026-06-06 16:00 至 17:00 CPU 周期性升高的问题。"
   graders: *complete_graders
 
 - id: memory-instance-name-exact-time
   type: tool_use
-  prompt: "用户中心数据库 user-center-db 在 2026-06-08 11:20 内存使用率达到 98%，请做故障诊断。"
+  prompt: "数据库实例 rds-aiops-0001 在 2026-06-08 11:20 内存使用率达到 98%，请做故障诊断。"
   graders: *complete_graders
 
 - id: memory-instance-id-oom
   type: tool_use
-  prompt: "实例 rm-wz9m8n7b6v5c4x3z 在 2026-06-05 03:18 疑似发生 OOM，内存几乎耗尽，请分析。"
+  prompt: "实例 rds-aiops-0001 在 2026-06-05 03:18 疑似发生 OOM，内存几乎耗尽，请分析。"
   graders: *complete_graders
 
 - id: memory-gradual-growth
   type: tool_use
-  prompt: "inventory-mysql 从 2026-06-07 13:00 到 18:00 内存持续上涨没有回落，帮忙看看是什么原因。"
+  prompt: "rds-aiops-0001 从 2026-06-07 13:00 到 18:00 内存持续上涨没有回落，帮忙看看是什么原因。"
   graders: *complete_graders
 
 - id: memory-colloquial
   type: tool_use
-  prompt: "今天凌晨 01:30，实例 rm-bp8memory001 的内存突然爆了，帮我排查。"
+  prompt: "今天凌晨 01:30，实例 rds-aiops-0001 的内存突然爆了，帮我排查。"
   graders: *complete_graders
 
 - id: disk-instance-name-full
   type: tool_use
-  prompt: "实例 log-platform-db 在 2026-06-08 08:45 磁盘使用率超过 90% 并持续增长，请诊断。"
+  prompt: "实例 rds-aiops-0001 在 2026-06-08 08:45 磁盘使用率超过 90% 并持续增长，请诊断。"
   graders: *complete_graders
 
 - id: disk-instance-id-full
   type: tool_use
-  prompt: "请检查 rm-bp6disk987654，2026-06-04 19:30 出现磁盘空间不足的问题。"
+  prompt: "请检查 rds-aiops-0001，2026-06-04 19:30 出现磁盘空间不足的问题。"
   graders: *complete_graders
 
 - id: disk-io-high
   type: tool_use
-  prompt: "report-db-prod 在 2026-06-07 15:00 到 15:25 磁盘 IO 特别高，业务查询明显变慢，请分析。"
+  prompt: "rds-aiops-0001 在 2026-06-07 15:00 到 15:25 磁盘 IO 特别高，业务查询明显变慢，请分析。"
   graders: *complete_graders
 
 - id: disk-growth-colloquial
   type: tool_use
-  prompt: "昨天 10:00 左右，归档库 archive-mysql 的磁盘突然增长了很多，帮我查下原因。"
+  prompt: "昨天 10:00 左右，实例 rds-aiops-0001 的磁盘突然增长了很多，帮我查下原因。"
   graders: *complete_graders
 
 - id: slow-sql-frequency-name
   type: tool_use
-  prompt: "实例 crm-prod-db 在 2026-06-08 17:40 开始频繁出现慢 SQL，请定位原因。"
+  prompt: "实例 rds-aiops-0001 在 2026-06-08 17:40 开始频繁出现慢 SQL，请定位原因。"
   graders: *complete_graders
 
 - id: slow-sql-frequency-id
   type: tool_use
-  prompt: "rm-bp1slowquery88 在 2026-06-06 12:00 到 13:00 慢查询数量暴增，麻烦诊断。"
+  prompt: "rds-aiops-0001 在 2026-06-06 12:00 到 13:00 慢查询数量暴增，麻烦诊断。"
   graders: *complete_graders
 
 - id: slow-sql-business-impact
   type: tool_use
-  prompt: "2026-06-07 20:10，实例 settlement-db 的接口响应突然变慢，监控显示慢 SQL 高频出现，请帮忙分析。"
+  prompt: "2026-06-07 20:10，实例 rds-aiops-0001 的接口响应突然变慢，监控显示慢 SQL 高频出现，请帮忙分析。"
   graders: *complete_graders
 
 - id: slow-sql-colloquial
   type: tool_use
-  prompt: "昨天下午 3 点左右，商品库 product-mysql 一直刷慢 SQL，看看发生了什么。"
+  prompt: "昨天下午 3 点左右，实例 rds-aiops-0001 一直刷慢 SQL，看看发生了什么。"
   graders: *complete_graders
 
 - id: replication-delay-name
   type: tool_use
-  prompt: "实例 analytics-replica 在 2026-06-08 09:25 出现主从复制延迟，请诊断延迟原因。"
+  prompt: "实例 rds-aiops-0001 在 2026-06-08 09:25 出现主从复制延迟，请诊断延迟原因。"
   graders: *complete_graders
 
 - id: replication-delay-id
   type: tool_use
-  prompt: "rm-bp1replica9988 在 2026-06-05 21:00 到 22:00 复制延迟持续超过 600 秒，请排查。"
+  prompt: "rds-aiops-0001 在 2026-06-05 21:00 到 22:00 复制延迟持续超过 600 秒，请排查。"
   graders: *complete_graders
 
 - id: replication-delay-fluctuation
   type: tool_use
-  prompt: "读库 read-db-prod 昨天 18:30 左右复制延迟反复升高又恢复，帮我分析这个故障。"
+  prompt: "实例 rds-aiops-0001 昨天 18:30 左右复制延迟反复升高又恢复，帮我分析这个故障。"
   graders: *complete_graders
 
 - id: replication-delay-business-impact
   type: tool_use
-  prompt: "2026-06-07 14:50，实例 order-readonly-db 数据比主库落后很多，确认是复制延迟，请做诊断。"
+  prompt: "2026-06-07 14:50，实例 rds-aiops-0001 数据比主库落后很多，确认是复制延迟，请做诊断。"
   graders: *complete_graders
 
 - id: replication-error-name
   type: tool_use
-  prompt: "实例 finance-slave-db 在 2026-06-08 02:12 复制中断并报错，请帮我定位原因。"
+  prompt: "实例 rds-aiops-0001 在 2026-06-08 02:12 复制中断并报错，请帮我定位原因。"
   graders: *complete_graders
 
 - id: replication-error-id
   type: tool_use
-  prompt: "rm-bp1replicaerror 在 2026-06-03 23:45 出现复制异常，当前同步已经停止，请诊断。"
+  prompt: "rds-aiops-0001 在 2026-06-03 23:45 出现复制异常，当前同步已经停止，请诊断。"
   graders: *complete_graders
 
 - id: replication-error-sql-thread
   type: tool_use
-  prompt: "实例 warehouse-replica 在 2026-06-06 06:30 SQL 线程停止，发生复制异常，请排查。"
+  prompt: "实例 rds-aiops-0001 在 2026-06-06 06:30 SQL 线程停止，发生复制异常，请排查。"
   graders: *complete_graders
 
 - id: replication-error-io-thread
   type: tool_use
-  prompt: "昨天凌晨 04:20，实例 backup-slave 的 IO 线程报错，主从复制失败，麻烦分析。"
+  prompt: "昨天凌晨 04:20，实例 rds-aiops-0001 的 IO 线程报错，主从复制失败，麻烦分析。"
   graders: *complete_graders
 
 - id: missing-instance
@@ -160,7 +160,7 @@
 
 - id: missing-time
   type: clarification
-  prompt: "实例 payment-prod-mysql 的 CPU 突然打满了，帮我分析。"
+  prompt: "实例 rds-aiops-0001 的 CPU 突然打满了，帮我分析。"
   graders:
     - kind: tool_call
       must_call: skill_view
@@ -176,7 +176,7 @@
 
 - id: missing-fault-type
   type: clarification
-  prompt: "请帮我看一下实例 rm-bp1a2b3c4d5e6f7g 在 2026-06-08 14:35 的故障。"
+  prompt: "请帮我看一下实例 rds-aiops-0001 在 2026-06-08 14:35 的故障。"
   graders:
     - kind: tool_call
       must_call: skill_view
@@ -208,7 +208,7 @@
 
 - id: missing-time-and-fault
   type: clarification
-  prompt: "帮我诊断一下实例 inventory-mysql。"
+  prompt: "帮我诊断一下实例 rds-aiops-0001。"
   graders:
     - kind: tool_call
       must_call: skill_view
