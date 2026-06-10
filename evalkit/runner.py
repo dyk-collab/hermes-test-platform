@@ -148,10 +148,10 @@ def run_prompt(
     result.returncode = proc.returncode
 
     if proc.returncode != 0:
-        result.error = f"hermes exited {proc.returncode}: {proc.stderr.strip()[:500]}"
+        result.error = f"hermes exited {proc.returncode}: {stderr.strip()[:500]}"
         return result
 
-    m = _SESSION_ID_RE.search(proc.stderr)
+    m = _SESSION_ID_RE.search(stderr)
     if not m:
         result.error = "could not find `session_id:` in hermes stderr"
         return result
