@@ -124,6 +124,7 @@ def run_prompt(
                 result.stderr = stderr
                 result.returncode = proc.returncode if proc.returncode is not None else -1
                 result.error = "cancelled"
+                _attach_failure_context(result, hermes_bin=hermes)
                 return result
             try:
                 stdout, stderr = proc.communicate(timeout=0.2)
@@ -137,10 +138,12 @@ def run_prompt(
                     result.stderr = stderr
                     result.returncode = proc.returncode if proc.returncode is not None else -1
                     result.error = f"hermes run timed out after {timeout}s"
+                    _attach_failure_context(result, hermes_bin=hermes)
                     return result
     except subprocess.TimeoutExpired:
         result.wall_clock = time.monotonic() - t0
         result.error = f"hermes run timed out after {timeout}s"
+        _attach_failure_context(result, hermes_bin=hermes)
         return result
     result.wall_clock = time.monotonic() - t0
 
@@ -173,6 +176,37 @@ def run_prompt(
         result.error = result.diagnostics or "session export failed"
 
     return result
+
+
+def _attach_failure_context(result: RunResult, *, hermes_bin: str) -> None:
+    """Best-effort context for interrupted runs that otherwise look blank."""
+    if result.stderr and result.session_id is None:
+        m = _SESSION_ID_RE.search(result.stderr)
+        if m:
+            result.session_id = m.group(1)
+
+    if result.session_id and result.session is None:
+        try:
+            result.session = export_session(result.session_id, hermes_bin=hermes_bin)
+        except Exception as exc:  # noqa: BLE001 - diagnostic only
+            result.diagnostics = f"Session export failed: {exc}"
+
+    parts: list[str] = []
+    if result.error:
+        parts.append(result.error)
+    if result.session_id:
+        parts.append(f"session_id: {result.session_id}")
+    else:
+        parts.append("No session_id was captured before the process was stopped.")
+    if result.stderr:
+        parts.append("Hermes stderr:\n" + result.stderr.strip()[-4000:])
+    if result.session_id:
+        logs = collect_session_logs(result.session_id, hermes_bin=hermes_bin)
+        if logs:
+            parts.append("Hermes logs:\n" + logs[-4000:])
+    result.diagnostics = "\n\n".join(
+        part for part in (result.diagnostics, *parts) if part
+    )
 
 
 def collect_session_logs(
