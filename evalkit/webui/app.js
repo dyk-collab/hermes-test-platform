@@ -15,6 +15,7 @@ const api = async (url, opts) => {
   return r.json();
 };
 const fmtSecs = (v) => (typeof v === "number" ? `${v.toFixed(1)}s` : "-");
+const tail = (s, n = 1200) => (s && s.length > n ? `…${s.slice(-n)}` : s || "");
 const fmtCost = (m) => {
   if (!m) return "-";
   if (m.cost_status === "unknown" || m.cost == null) return "未知";
@@ -164,8 +165,8 @@ function renderReport(report) {
 }
 
 // ---- 消息气泡渲染（轨迹抽屉 & 试跑共用）------------------------------------
-function renderMessagesInto(box, messages, onAssert) {
-  box.innerHTML = "";
+function renderMessagesInto(box, messages, onAssert, { append = false } = {}) {
+  if (!append) box.innerHTML = "";
   (messages || []).forEach((msg) => {
     const role = msg.role === "user" ? "user" : msg.role === "tool" ? "tool" : "assistant";
     const wrap = el("div", `msg ${role}`);
@@ -284,7 +285,7 @@ function renderTrajectory(t) {
     e.appendChild(el("pre", "body", t.diagnostics));
     box.appendChild(e);
   }
-  renderMessagesInto(box, t.messages, null);
+  renderMessagesInto(box, t.messages, null, { append: true });
 }
 
 // ---- 评测：触发运行 + 实时进度（增量日志）---------------------------------
@@ -296,10 +297,18 @@ function eventLine(ev) {
   let line = "";
   if (ev.type === "run_start") line = `开始运行 ${ev.total} 条用例 → ${ev.run_id}`;
   else if (ev.type === "case_start") line = `[${ev.i}/${ev.total}] ${ev.case_id} …`;
-  else if (ev.type === "case_done")
-    line = ev.ok
-      ? `[${ev.i}/${ev.total}] ${ev.case_id} ✓ ${fmtSecs(ev.wall_clock)} · ${ev.session_id}`
-      : `[${ev.i}/${ev.total}] ${ev.case_id} ✗ 运行错误：${ev.error}`;
+  else if (ev.type === "case_done") {
+    if (ev.ok) {
+      line = `[${ev.i}/${ev.total}] ${ev.case_id} ✓ ${fmtSecs(ev.wall_clock)} · ${ev.session_id}`;
+    } else {
+      const bits = [`[${ev.i}/${ev.total}] ${ev.case_id} ✗ 运行错误：${ev.error || "未知错误"}`];
+      if (ev.wall_clock != null) bits.push(`耗时：${fmtSecs(ev.wall_clock)}`);
+      if (ev.session_id) bits.push(`session_id：${ev.session_id}`);
+      const detail = tail(ev.diagnostics || ev.stderr);
+      if (detail) bits.push(detail);
+      line = bits.join("\n");
+    }
+  }
   else if (ev.type === "grade_start") line = `开始打分（${ev.total} 条）…`;
   else if (ev.type === "case_graded") line = `打分 ${ev.case_id}：${ev.passed ? "通过" : "失败"}`;
   else if (ev.type === "graded") line = `打分完成，报告已生成。`;
@@ -746,6 +755,10 @@ function renderTryResult(t) {
   );
   box.appendChild(meta);
   if (t.error) box.appendChild(el("div", "err", "运行错误：" + t.error));
+  if (t.diagnostics || t.stderr) {
+    const d = el("pre", "try-diagnostics", tail(t.diagnostics || t.stderr, 4000));
+    box.appendChild(d);
+  }
   const msgs = el("div", "messages compact");
   renderMessagesInto(msgs, t.messages, insertAssertion);
   box.appendChild(msgs);
