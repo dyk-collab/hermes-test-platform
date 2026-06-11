@@ -15,7 +15,7 @@
 
 - id: 列出数据库连接工具是否可用
   type: tool_use
-  prompt: "我有哪些数据库连接"
+  prompt: "我有哪些数据库连接。先回答这个问题，然后回答有哪些表"
   graders:
     - kind: tool_call
       must_call: list_database_info
