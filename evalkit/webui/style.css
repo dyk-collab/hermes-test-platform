@@ -53,7 +53,7 @@ body {
 .field > span { display: block; margin-bottom: 6px; color: var(--muted); font-size: 12px; }
 .field em { font-style: normal; }
 .muted { color: var(--muted); }
-select, input[type="text"] {
+select, input[type="text"], input[type="number"] {
   width: 100%; padding: 8px 10px; background: var(--panel-2);
   border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px;
 }
@@ -68,8 +68,11 @@ select:focus, input:focus { outline: none; border-color: var(--accent); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; width: 100%; font-weight: 600; }
 .btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { background: rgba(255,107,107,.15); border-color: var(--red); color: var(--red); font-weight: 600; }
 .btn.tiny { padding: 2px 8px; font-size: 12px; }
 .tip { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
+.button-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.button-row .btn.primary { width: 100%; }
 
 /* ---- runs list ---- */
 .runs-list { list-style: none; margin: 0; padding: 0; }
@@ -97,6 +100,7 @@ select:focus, input:focus { outline: none; border-color: var(--accent); }
 .badge.running { background: rgba(91,157,255,.15); color: var(--accent); }
 .badge.done { background: rgba(63,208,127,.15); color: var(--green); }
 .badge.error { background: rgba(255,107,107,.15); color: var(--red); }
+.badge.cancelled, .badge.cancelling { background: rgba(255,204,102,.15); color: var(--yellow); }
 
 .report-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
 .report-head h2 { margin: 0; }

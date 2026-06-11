@@ -256,6 +256,7 @@ function renderTrajectory(t) {
 // ---- 评测：触发运行 + 实时进度（增量日志）---------------------------------
 let pollTimer = null;
 let renderedEvents = 0; // B 轨：增量 append，不再每轮全量重建
+let activeJobId = null;
 
 function eventLine(ev) {
   let line = "";
@@ -268,6 +269,9 @@ function eventLine(ev) {
   else if (ev.type === "grade_start") line = `开始打分（${ev.total} 条）…`;
   else if (ev.type === "case_graded") line = `打分 ${ev.case_id}：${ev.passed ? "通过" : "失败"}`;
   else if (ev.type === "graded") line = `打分完成，报告已生成。`;
+  else if (ev.type === "cancel_requested") line = `已请求停止，正在结束运行中的用例…`;
+  else if (ev.type === "run_cancelled") line = `已停止：完成 ${ev.completed}/${ev.total} 条用例。`;
+  else if (ev.type === "grade_cancelled") line = `打分已停止：完成 ${ev.completed}/${ev.total} 条。`;
   else if (ev.type === "error") line = `错误：${ev.message}`;
   else return null; // try_start/try_done 等不进运行日志
   const cls =
@@ -285,7 +289,9 @@ function renderProgress(job) {
   $("#eval-empty").classList.add("hidden");
   const badge = $("#progress-status");
   badge.className = "badge " + job.status;
-  badge.textContent = { running: "运行中", done: "已完成", error: "出错" }[job.status] || job.status;
+  badge.textContent =
+    { running: "运行中", cancelling: "停止中", cancelled: "已停止", done: "已完成", error: "出错" }[job.status] ||
+    job.status;
 
   const log = $("#progress-log");
   const events = job.events || [];
@@ -302,7 +308,7 @@ async function pollJob(jobId, onDone) {
     const job = await api(`/api/jobs/${jobId}`);
     if (onDone) onDone(job, false);
     else renderProgress(job);
-    if (job.status === "running") {
+    if (job.status === "running" || job.status === "cancelling") {
       pollTimer = setTimeout(() => pollJob(jobId, onDone), 1000);
       return;
     }
@@ -310,12 +316,16 @@ async function pollJob(jobId, onDone) {
       onDone(job, true);
       return;
     }
-    setHint(job.status === "done" ? "完成" : "出错");
+    activeJobId = null;
+    setStopVisible(false);
+    setHint(job.status === "done" ? "完成" : job.status === "cancelled" ? "已停止" : "出错");
     enableButtons(true);
     await loadRuns();
     const target = job.run_id || currentRunId;
-    if (target) await openRun(target);
+    if (target && job.status === "done") await openRun(target);
   } catch (e) {
+    activeJobId = null;
+    setStopVisible(false);
     setHint("轮询任务失败：" + e.message);
     enableButtons(true);
   }
@@ -324,6 +334,11 @@ async function pollJob(jobId, onDone) {
 function enableButtons(on) {
   $("#run-btn").disabled = !on;
   $("#regrade-btn").disabled = !on;
+}
+
+function setStopVisible(on) {
+  $("#stop-btn").classList.toggle("hidden", !on);
+  $("#stop-btn").disabled = !on;
 }
 
 // 把选中的预设 + 模型覆盖解析成 /api/run 的请求体
@@ -343,6 +358,7 @@ function resolveRunConfig(dataset) {
     yolo: p.yolo !== undefined ? p.yolo : true,
     accept_hooks: p.accept_hooks !== undefined ? p.accept_hooks : true,
     ignore_rules: p.ignore_rules !== undefined ? p.ignore_rules : true,
+    concurrency: Math.max(1, Number($("#concurrency-input").value || 1)),
   };
 }
 
@@ -359,6 +375,8 @@ async function startRun() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(resolveRunConfig(dataset)),
     });
+    activeJobId = job_id;
+    setStopVisible(true);
     pollJob(job_id);
   } catch (e) {
     setHint("发起失败：" + e.message);
@@ -374,10 +392,24 @@ async function regrade() {
   renderedEvents = 0;
   try {
     const { job_id } = await api(`/api/runs/${currentRunId}/grade`, { method: "POST" });
+    activeJobId = job_id;
+    setStopVisible(true);
     pollJob(job_id);
   } catch (e) {
     setHint("重新打分失败：" + e.message);
     enableButtons(true);
+  }
+}
+
+async function cancelActiveJob() {
+  if (!activeJobId) return;
+  $("#stop-btn").disabled = true;
+  setHint("正在请求停止…");
+  try {
+    await api(`/api/jobs/${activeJobId}/cancel`, { method: "POST" });
+  } catch (e) {
+    $("#stop-btn").disabled = false;
+    setHint("停止失败：" + e.message);
   }
 }
 
@@ -649,7 +681,7 @@ async function tryRun() {
     const { job_id } = await api("/api/try", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, toolsets, model: null }),
+      body: JSON.stringify({ prompt, toolsets, model: null, yolo: $("#try-yolo").checked }),
     });
     pollJob(job_id, (job, done) => {
       if (!done) return;
@@ -884,6 +916,7 @@ async function deletePreset(name) {
 
 // ---- 绑定事件 --------------------------------------------------------------
 $("#run-btn").onclick = startRun;
+$("#stop-btn").onclick = cancelActiveJob;
 $("#regrade-btn").onclick = regrade;
 $("#refresh-runs").onclick = loadRuns;
 $("#drawer-close").onclick = closeDrawer;

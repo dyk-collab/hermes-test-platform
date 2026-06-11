@@ -19,7 +19,7 @@ from typing import Any, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from . import service
 
@@ -52,10 +52,11 @@ def _new_job(kind: str) -> str:
         _jobs[job_id] = {
             "id": job_id,
             "kind": kind,
-            "status": "running",  # running | done | error
+            "status": "running",  # running | cancelling | done | error | cancelled
             "events": [],
             "run_id": None,
             "error": None,
+            "cancel_event": threading.Event(),
         }
     return job_id
 
@@ -72,13 +73,18 @@ def _make_emitter(job_id: str):
     return emit
 
 
+def _get_cancel_event(job_id: str) -> threading.Event:
+    with _jobs_lock:
+        return _jobs[job_id]["cancel_event"]
+
+
 def _run_in_thread(job_id: str, fn, *args, **kwargs) -> None:
     def worker() -> None:
         try:
             result = fn(*args, **kwargs)
             with _jobs_lock:
                 job = _jobs[job_id]
-                job["status"] = "done"
+                job["status"] = "cancelled" if job["cancel_event"].is_set() else "done"
                 # execute_run returns the run dir; capture its id if not already set
                 if job["run_id"] is None and isinstance(result, str):
                     job["run_id"] = Path(result).name
@@ -108,6 +114,7 @@ class RunRequest(BaseModel):
     accept_hooks: bool = True
     ignore_rules: bool = True
     preset: Optional[str] = None  # preset name (labeling only; params are resolved by caller)
+    concurrency: int = Field(default=1, ge=1, le=32)
 
 
 class PresetRequest(BaseModel):
@@ -141,6 +148,9 @@ class TryRequest(BaseModel):
     model: Optional[str] = None
     profile: Optional[str] = None
     timeout: float = 600.0
+    yolo: bool = True
+    accept_hooks: bool = True
+    ignore_rules: bool = True
 
 
 # ---- read APIs -------------------------------------------------------------
@@ -240,6 +250,8 @@ def api_start_run(req: RunRequest) -> dict[str, Any]:
         ignore_rules=req.ignore_rules,
         preset=req.preset or None,
         grade=True,
+        concurrency=req.concurrency,
+        cancel_event=_get_cancel_event(job_id),
         on_event=_make_emitter(job_id),
     )
     return {"job_id": job_id}
@@ -276,6 +288,7 @@ def api_start_grade(run_id: str) -> dict[str, Any]:
         job_id,
         service.execute_grade,
         str(service.RUNS_DIR / run_id),
+        cancel_event=_get_cancel_event(job_id),
         on_event=_make_emitter(job_id),
     )
     return {"job_id": job_id}
@@ -293,9 +306,27 @@ def api_try(req: TryRequest) -> dict[str, Any]:
         model=req.model or None,
         profile=req.profile or None,
         timeout=req.timeout,
+        yolo=req.yolo,
+        accept_hooks=req.accept_hooks,
+        ignore_rules=req.ignore_rules,
+        cancel_event=_get_cancel_event(job_id),
         on_event=_make_emitter(job_id),
     )
     return {"job_id": job_id}
+
+
+@app.post("/api/jobs/{job_id}/cancel")
+def api_cancel_job(job_id: str) -> dict[str, Any]:
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail="job not found")
+        if job["status"] not in {"running", "cancelling"}:
+            return {"ok": True, "status": job["status"]}
+        job["cancel_event"].set()
+        job["status"] = "cancelling"
+        job["events"].append({"type": "cancel_requested"})
+        return {"ok": True, "status": job["status"]}
 
 
 @app.get("/api/jobs/{job_id}")

@@ -8,10 +8,13 @@ Flow (see EVAL_PLATFORM_PLAN.md §6):
 
 from __future__ import annotations
 
+import os
 import re
+import signal
 import subprocess
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from threading import Event
 from typing import Optional
 
 from .config import resolve_hermes
@@ -64,6 +67,7 @@ def run_prompt(
     accept_hooks: bool = True,
     ignore_rules: bool = True,
     hermes_bin: Optional[str] = None,
+    cancel_event: Optional[Event] = None,
 ) -> RunResult:
     """Run one prompt and return a RunResult with the parsed session attached.
 
@@ -97,25 +101,57 @@ def run_prompt(
         cmd += ["--max-turns", str(max_turns)]
 
     result = RunResult(case_id=case_id, prompt=prompt)
+    if cancel_event is not None and cancel_event.is_set():
+        result.error = "cancelled before start"
+        return result
 
     t0 = time.monotonic()
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        proc = subprocess.Popen(  # noqa: S603 - hermes binary is resolved/configured locally
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            start_new_session=True,
+        )
+        while True:
+            if cancel_event is not None and cancel_event.is_set():
+                _terminate_process(proc)
+                stdout, stderr = proc.communicate()
+                result.wall_clock = time.monotonic() - t0
+                result.answer = stdout.strip()
+                result.stderr = stderr
+                result.returncode = proc.returncode if proc.returncode is not None else -1
+                result.error = "cancelled"
+                return result
+            try:
+                stdout, stderr = proc.communicate(timeout=0.2)
+                break
+            except subprocess.TimeoutExpired:
+                if time.monotonic() - t0 > timeout:
+                    _terminate_process(proc)
+                    stdout, stderr = proc.communicate()
+                    result.wall_clock = time.monotonic() - t0
+                    result.answer = stdout.strip()
+                    result.stderr = stderr
+                    result.returncode = proc.returncode if proc.returncode is not None else -1
+                    result.error = f"hermes run timed out after {timeout}s"
+                    return result
     except subprocess.TimeoutExpired:
         result.wall_clock = time.monotonic() - t0
         result.error = f"hermes run timed out after {timeout}s"
         return result
     result.wall_clock = time.monotonic() - t0
 
-    result.answer = proc.stdout.strip()
-    result.stderr = proc.stderr
+    result.answer = stdout.strip()
+    result.stderr = stderr
     result.returncode = proc.returncode
 
     if proc.returncode != 0:
-        result.error = f"hermes exited {proc.returncode}: {proc.stderr.strip()[:500]}"
+        result.error = f"hermes exited {proc.returncode}: {stderr.strip()[:500]}"
         return result
 
-    m = _SESSION_ID_RE.search(proc.stderr)
+    m = _SESSION_ID_RE.search(stderr)
     if not m:
         result.error = "could not find `session_id:` in hermes stderr"
         return result
@@ -127,3 +163,20 @@ def run_prompt(
         result.error = f"session export failed: {exc}"
 
     return result
+
+
+def _terminate_process(proc: subprocess.Popen[str]) -> None:
+    """Stop hermes and any child process it started for this eval case."""
+    if proc.poll() is not None:
+        return
+    try:
+        os.killpg(proc.pid, signal.SIGTERM)
+    except Exception:
+        proc.terminate()
+    try:
+        proc.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except Exception:
+            proc.kill()

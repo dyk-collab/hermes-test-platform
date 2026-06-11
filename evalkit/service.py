@@ -16,8 +16,10 @@ same ``on_event`` progress stream. Events are plain dicts (JSON-friendly):
 from __future__ import annotations
 
 import json
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from datetime import datetime
 from pathlib import Path
+from threading import Event
 from typing import Any, Callable, Optional
 
 from .config import DATASETS_DIR, RUNS_DIR
@@ -59,6 +61,8 @@ def execute_run(
     ignore_rules: bool = True,
     preset: Optional[str] = None,  # preset name, for labeling/manifest only
     grade: bool = True,
+    concurrency: int = 1,
+    cancel_event: Optional[Event] = None,
     on_event: OnEvent = None,
 ) -> str:
     """Run every case, store trajectories, optionally grade. Returns the run dir.
@@ -68,6 +72,7 @@ def execute_run(
     for the whole run when set; otherwise the case's toolsets are used.
     """
     cases = load_dataset(dataset)
+    concurrency = max(1, int(concurrency or 1))
     runs_root = Path(out) if out else RUNS_DIR
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_dir = runs_root / run_id
@@ -84,6 +89,7 @@ def execute_run(
         "yolo": yolo,
         "accept_hooks": accept_hooks,
         "ignore_rules": ignore_rules,
+        "concurrency": concurrency,
     }
     manifest = {
         "run_id": run_id,
@@ -98,7 +104,9 @@ def execute_run(
     (run_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2))
 
     _emit(on_event, type="run_start", run_id=run_id, run_dir=str(run_dir), total=len(cases))
-    for i, case in enumerate(cases, 1):
+    cancelled = False
+
+    def run_case(i: int, case) -> None:
         _emit(on_event, type="case_start", i=i, total=len(cases), case_id=case.id)
         run = run_prompt(
             case.prompt,
@@ -113,6 +121,7 @@ def execute_run(
             yolo=yolo,
             accept_hooks=accept_hooks,
             ignore_rules=ignore_rules,
+            cancel_event=cancel_event,
         )
         save_raw(run_dir, case, run)
         _emit(
@@ -120,15 +129,61 @@ def execute_run(
             ok=run.ok, wall_clock=run.wall_clock, session_id=run.session_id, error=run.error,
         )
 
-    if grade:
-        execute_grade(str(run_dir), on_event=on_event)
+    if concurrency == 1:
+        for i, case in enumerate(cases, 1):
+            if cancel_event is not None and cancel_event.is_set():
+                cancelled = True
+                break
+            run_case(i, case)
+            if cancel_event is not None and cancel_event.is_set():
+                cancelled = True
+                break
+    else:
+        case_iter = iter(enumerate(cases, 1))
+        futures: set[Future[None]] = set()
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            while len(futures) < concurrency:
+                if cancel_event is not None and cancel_event.is_set():
+                    cancelled = True
+                    break
+                try:
+                    i, case = next(case_iter)
+                except StopIteration:
+                    break
+                futures.add(pool.submit(run_case, i, case))
+
+            while futures:
+                done, futures = wait(futures, return_when=FIRST_COMPLETED)
+                for fut in done:
+                    fut.result()
+                if cancel_event is not None and cancel_event.is_set():
+                    cancelled = True
+                    continue
+                while len(futures) < concurrency:
+                    try:
+                        i, case = next(case_iter)
+                    except StopIteration:
+                        break
+                    futures.add(pool.submit(run_case, i, case))
+
+    if cancelled:
+        raw_count = len(list((run_dir / "raw").glob("*.json"))) if (run_dir / "raw").is_dir() else 0
+        _emit(on_event, type="run_cancelled", completed=raw_count, total=len(cases))
+
+    if grade and not cancelled and (run_dir / "raw").is_dir():
+        execute_grade(str(run_dir), cancel_event=cancel_event, on_event=on_event)
     return str(run_dir)
 
 
 # ---- grade -----------------------------------------------------------------
 
 
-def execute_grade(run_dir: str, *, on_event: OnEvent = None) -> dict[str, Any]:
+def execute_grade(
+    run_dir: str,
+    *,
+    cancel_event: Optional[Event] = None,
+    on_event: OnEvent = None,
+) -> dict[str, Any]:
     """(Re)grade every stored case and write report.json/.md. Returns the report."""
     rd = Path(run_dir)
     raw_dir = rd / "raw"
@@ -146,6 +201,9 @@ def execute_grade(run_dir: str, *, on_event: OnEvent = None) -> dict[str, Any]:
     _emit(on_event, type="grade_start", total=len(raw_paths))
     graded: list[dict[str, Any]] = []
     for raw_path in raw_paths:
+        if cancel_event is not None and cancel_event.is_set():
+            _emit(on_event, type="grade_cancelled", completed=len(graded), total=len(raw_paths))
+            break
         d, run = load_raw(raw_path)
         grades = grade_case(run, d.get("graders") or [])
         passed = bool(grades) and all(g.passed for g in grades)
@@ -496,6 +554,10 @@ def try_prompt(
     model: Optional[str] = None,
     profile: Optional[str] = None,
     timeout: float = 600.0,
+    yolo: bool = True,
+    accept_hooks: bool = True,
+    ignore_rules: bool = True,
+    cancel_event: Optional[Event] = None,
     on_event: OnEvent = None,
 ) -> dict[str, Any]:
     """Run a single prompt and return its trajectory (no run dir written).
@@ -513,6 +575,10 @@ def try_prompt(
         skills=skills,
         profile=profile,
         timeout=timeout,
+        yolo=yolo,
+        accept_hooks=accept_hooks,
+        ignore_rules=ignore_rules,
+        cancel_event=cancel_event,
     )
     s = run.session
     messages: list[dict[str, Any]] = []

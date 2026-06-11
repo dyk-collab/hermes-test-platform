@@ -69,6 +69,7 @@ class EvalKit:
         model: Optional[str] = None,
         profile: Optional[str] = None,
         timeout: float = 600.0,
+        concurrency: int = 1,
         grade: bool = True,
     ) -> str:
         """Run every case in a dataset, store trajectories, then grade + report.
@@ -79,11 +80,12 @@ class EvalKit:
             model: optional model override; default uses hermes's configured model.
             profile: optional hermes --profile for isolation.
             timeout: per-case timeout in seconds.
+            concurrency: number of cases to run at the same time.
             grade: also grade + report after running (default True).
         """
         run_dir = service.execute_run(
             dataset, out=out, model=model, profile=profile, timeout=timeout,
-            grade=grade, on_event=_console_reporter({}),
+            concurrency=concurrency, grade=grade, on_event=_console_reporter({}),
         )
         console.print(f"\n[dim]run → {run_dir}[/]")
         return run_dir

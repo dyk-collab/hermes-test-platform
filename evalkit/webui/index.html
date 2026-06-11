@@ -37,7 +37,14 @@
             <span>模型 <em class="muted">（留空＝用预设/默认；填则覆盖本次）</em></span>
             <input id="model-input" type="text" placeholder="例如 anthropic/claude-sonnet-4.6" />
           </label>
-          <button id="run-btn" class="btn primary">▶ 运行评测</button>
+          <label class="field">
+            <span>并发数 <em class="muted">同时运行的用例数</em></span>
+            <input id="concurrency-input" type="number" min="1" max="32" value="1" />
+          </label>
+          <div class="button-row">
+            <button id="run-btn" class="btn primary">▶ 运行评测</button>
+            <button id="stop-btn" class="btn danger hidden">■ 停止</button>
+          </div>
           <p class="tip">提示：评测会逐条调用 hermes，可能耗时；进度实时显示在右侧，完成后自动跳到「历史」看报告。</p>
         </section>
       </aside>
@@ -107,6 +114,7 @@
             <span>toolsets <em class="muted">逗号分隔，可空</em></span>
             <input id="try-toolsets" type="text" placeholder="skills" />
           </label>
+          <label class="check"><input type="checkbox" id="try-yolo" checked /> --yolo <em class="muted">跳过危险命令审批</em></label>
           <button id="try-btn" class="btn">⚡ 试跑</button>
           <div id="try-result" class="try-result"></div>
         </div>
