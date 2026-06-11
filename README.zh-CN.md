@@ -1,13 +1,10 @@
+[English](README.md)
+
 # Hermes Agent 测评平台
 
-这是一个基于 Hermes CLI 的自动化测评平台。平台读取 `datasets/*.yaml` 中的测试用例，调用 Hermes Agent 执行任务，导出完整 Session 轨迹，并根据配置检查：
+本平台用于评估 Hermes Agent 面对一组指定用户请求时，是否能够按照预期正确执行。它通过本地 Hermes CLI 运行 YAML 测试用例，记录每次 Session，检查 Skill 和 Tool 的调用是否符合要求，并可选择评估回答质量、运行指标以及不同 Agent 配置下的测试结果。
 
-- 是否调用了指定 Skill 或 Tool
-- Tool 参数和执行结果是否符合要求
-- 最终回答质量是否达标
-- 耗时、Token、API 调用次数和成本是否超过限制
-
-平台提供 Web 控制台和命令行两种使用方式。它不是 Hermes Agent 本体，运行前必须先安装并配置好 Hermes。
+可以使用本平台在发布 Hermes 环境变更之前，验证 Agent 路由、Skill 选择、Tool 调用、Tool 参数、异常处理、回答质量、耗时、Token 使用量和成本。
 
 ## 1. 安装与启动
 
