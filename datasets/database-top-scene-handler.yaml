@@ -6,7 +6,9 @@
 #
 # 信息缺失用例（仅检查工具行为，不评价追问文案）：
 # - 必须加载 database-top-scene-handler skill。
-# - 信息补全前不应调用凭证和数据库连接工具。
+# - 实例名称或 ID 缺失时，list_aksk_credentials 可调用也可不调用。
+# - 实例名称或 ID 缺失时，不应调用 list_database_info。
+# - 实例已知但缺少时间或故障类型时，不限制后续工具调用。
 #
 # 当前不检查三个工具的调用顺序。
 
@@ -234,97 +236,101 @@
 - id: missing-instance
   type: clarification
   prompt: "2026-06-08 14:35 数据库 CPU 使用率一直是 95%，帮我诊断。"
-  graders: &clarification_graders
+  graders: &missing_instance_graders
     - kind: tool_call
       must_call: skill_view
       args_match:
         name: database-top-scene-handler
       expect_success: true
       must_not_call:
-        - list_aksk_credentials
         - list_database_info
 
 - id: missing-time
   type: clarification
   prompt: "实例 rds-aiops-0001 的 CPU 突然打满了，帮我分析。"
-  graders: *clarification_graders
+  graders: &missing_context_graders
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
 
 - id: missing-fault-type
   type: clarification
   prompt: "请帮我看一下实例 rds-aiops-0001 在 2026-06-08 14:35 的故障。"
-  graders: *clarification_graders
+  graders: *missing_context_graders
 
 - id: missing-instance-and-time
   type: clarification
   prompt: "数据库出现了大量慢 SQL，帮忙排查一下。"
-  graders: *clarification_graders
+  graders: *missing_instance_graders
 
 - id: missing-time-and-fault
   type: clarification
   prompt: "帮我诊断一下实例 rds-aiops-0001。"
-  graders: *clarification_graders
+  graders: *missing_context_graders
 
 - id: missing-all-information
   type: clarification
   prompt: "帮我看看数据库怎么了。"
-  graders: *clarification_graders
+  graders: *missing_instance_graders
 
 - id: missing-instance-memory
   type: clarification
   prompt: "2026-06-10 09:30 内存使用率达到 99%，请帮我诊断。"
-  graders: *clarification_graders
+  graders: *missing_instance_graders
 
 - id: missing-instance-disk
   type: clarification
   prompt: "今天 10:20 数据库磁盘空间快满了，麻烦排查。"
-  graders: *clarification_graders
+  graders: *missing_instance_graders
 
 - id: missing-instance-replication-delay
   type: clarification
   prompt: "2026-06-10 11:00 主从复制延迟超过 500 秒，请分析。"
-  graders: *clarification_graders
+  graders: *missing_instance_graders
 
 - id: missing-instance-replication-error
   type: clarification
   prompt: "昨天凌晨 3 点数据库复制中断了，请诊断。"
-  graders: *clarification_graders
+  graders: *missing_instance_graders
 
 - id: missing-time-memory
   type: clarification
   prompt: "实例 rds-aiops-0001 内存使用率一直很高，请排查。"
-  graders: *clarification_graders
+  graders: *missing_context_graders
 
 - id: missing-time-disk
   type: clarification
   prompt: "rds-aiops-0001 的磁盘空间不足，帮我诊断。"
-  graders: *clarification_graders
+  graders: *missing_context_graders
 
 - id: missing-time-slow-sql
   type: clarification
   prompt: "实例 rds-aiops-0001 最近慢 SQL 特别多，请分析。"
-  graders: *clarification_graders
+  graders: *missing_context_graders
 
 - id: missing-time-replication-delay
   type: clarification
   prompt: "rds-aiops-0001 出现了主从复制延迟，请帮忙排查。"
-  graders: *clarification_graders
+  graders: *missing_context_graders
 
 - id: missing-time-replication-error
   type: clarification
   prompt: "实例 rds-aiops-0001 发生复制异常，请诊断。"
-  graders: *clarification_graders
+  graders: *missing_context_graders
 
 - id: missing-fault-type-relative-time
   type: clarification
   prompt: "请检查实例 rds-aiops-0001 今天上午 10 点的异常。"
-  graders: *clarification_graders
+  graders: *missing_context_graders
 
 - id: missing-fault-type-time-range
   type: clarification
   prompt: "rds-aiops-0001 在 2026-06-10 08:00 到 09:00 有问题，帮我看看。"
-  graders: *clarification_graders
+  graders: *missing_context_graders
 
 - id: missing-instance-and-fault
   type: clarification
   prompt: "请帮我诊断 2026-06-10 15:30 发生的数据库故障。"
-  graders: *clarification_graders
+  graders: *missing_instance_graders
