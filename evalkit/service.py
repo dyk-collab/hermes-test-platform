@@ -284,10 +284,13 @@ def get_report(run_id: str, runs_root: Optional[Path] = None) -> dict[str, Any]:
 def get_trajectory(run_id: str, case_id: str, runs_root: Optional[Path] = None) -> dict[str, Any]:
     """A case's full trajectory for replay: messages + tool calls + metrics."""
     root = runs_root or RUNS_DIR
+    case_dir = root / run_id
     raw_path = root / run_id / "raw" / f"{case_id}.json"
     if not raw_path.is_file():
         raise FileNotFoundError(f"no raw trajectory for {run_id}/{case_id}")
     d, run = load_raw(raw_path)
+    graded_path = case_dir / "graded" / f"{case_id}.json"
+    graded = json.loads(graded_path.read_text()) if graded_path.is_file() else {}
     s = run.session
     messages: list[dict[str, Any]] = []
     if s is not None:
@@ -306,8 +309,8 @@ def get_trajectory(run_id: str, case_id: str, runs_root: Optional[Path] = None) 
         "answer": run.answer,
         "session_id": run.session_id,
         "error": run.error,
-        "graders": d.get("graders") or [],
-        "metrics": metrics(run),
+        "graders": graded.get("grades") or d.get("graders") or [],
+        "metrics": graded.get("metrics") or metrics(run),
         "messages": messages,
     }
 
@@ -460,7 +463,7 @@ def grader_meta() -> dict[str, Any]:
                     {"name": "must_call_any", "type": "list", "desc": "调用其一即可"},
                     {"name": "must_not_call", "type": "list", "desc": "禁止调用"},
                     {"name": "args_match", "type": "map", "desc": "参数子集匹配（parse 后）"},
-                    {"name": "expect_success", "type": "bool", "desc": "tool 结果非报错", "default": True},
+                    {"name": "expect_success", "type": "bool", "desc": "候选调用至少一次结果非报错", "default": True},
                 ],
                 "snippet": (
                     "    - kind: tool_call\n"
@@ -491,11 +494,13 @@ def grader_meta() -> dict[str, Any]:
                     {"name": "rubric", "type": "text", "desc": "评分标准（必填）"},
                     {"name": "pass_threshold", "type": "number", "desc": "通过阈值 0-10", "default": 7},
                     {"name": "model", "type": "string", "desc": "可选：指定便宜的判官模型"},
+                    {"name": "record_process", "type": "bool", "desc": "是否保存判官 prompt/原始输出", "default": True},
                 ],
                 "snippet": (
                     "    - kind: llm_judge\n"
                     "      rubric: \"答案是否准确、是否抓住要点。\"\n"
                     "      pass_threshold: 7\n"
+                    "      record_process: true\n"
                 ),
             },
         ],
