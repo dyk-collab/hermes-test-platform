@@ -10,6 +10,7 @@ Spec fields:
   model:          str    optional judge-model override (default: hermes default;
                          a cheap model here keeps judging costs down)
   judge_timeout:  float  seconds (default 120)
+  record_process: bool   include judge prompt/raw output in details (default true)
 
 NOTE: unlike tool_call/timing, this grader spends model tokens — so `grade` is no
 longer free when a case uses it. run/grade are still separate (you can swap the
@@ -72,6 +73,24 @@ def _run_judge(prompt: str, model: str | None, timeout: float) -> tuple[str, str
     return proc.stdout.strip(), proc.stderr
 
 
+def _judge_process_details(
+    prompt: str,
+    stdout: str = "",
+    stderr: str = "",
+    *,
+    record_process: bool = True,
+) -> dict[str, Any]:
+    if not record_process:
+        return {}
+    details = {
+        "judge_prompt": prompt,
+        "judge_raw": stdout,
+    }
+    if stderr.strip():
+        details["judge_stderr"] = stderr.strip()
+    return details
+
+
 @register("llm_judge")
 def llm_judge_grader(run: "RunResult", spec: dict[str, Any]) -> GradeResult:
     rubric = spec.get("rubric")
@@ -85,24 +104,38 @@ def llm_judge_grader(run: "RunResult", spec: dict[str, Any]) -> GradeResult:
     threshold = float(spec.get("pass_threshold", 7))
     model = spec.get("model")
     timeout = float(spec.get("judge_timeout", 120))
+    record_process = bool(spec.get("record_process", True))
 
     judge_prompt = _JUDGE_TEMPLATE.format(
         task=run.prompt, answer=answer, rubric=rubric, threshold=threshold
     )
 
     try:
-        stdout, _ = _run_judge(judge_prompt, model, timeout)
+        stdout, stderr = _run_judge(judge_prompt, model, timeout)
     except subprocess.TimeoutExpired:
-        return GradeResult("llm_judge", False, reason=f"judge timed out after {timeout}s")
+        return GradeResult(
+            "llm_judge",
+            False,
+            reason=f"judge timed out after {timeout}s",
+            details={"model": model, **_judge_process_details(judge_prompt, record_process=record_process)},
+        )
     except Exception as exc:  # noqa: BLE001 - surface judge failures as a failed grade
-        return GradeResult("llm_judge", False, reason=f"judge error: {exc}")
+        return GradeResult(
+            "llm_judge",
+            False,
+            reason=f"judge error: {exc}",
+            details={"model": model, **_judge_process_details(judge_prompt, record_process=record_process)},
+        )
 
     verdict = _extract_json(stdout)
     if verdict is None:
         return GradeResult(
             "llm_judge", False,
             reason="could not parse judge JSON",
-            details={"judge_raw": stdout[:500]},
+            details={
+                "model": model,
+                **_judge_process_details(judge_prompt, stdout, stderr, record_process=record_process),
+            },
         )
 
     raw_score = verdict.get("score")
@@ -112,7 +145,10 @@ def llm_judge_grader(run: "RunResult", spec: dict[str, Any]) -> GradeResult:
         return GradeResult(
             "llm_judge", False,
             reason=f"judge returned non-numeric score: {raw_score!r}",
-            details={"judge_raw": stdout[:500]},
+            details={
+                "model": model,
+                **_judge_process_details(judge_prompt, stdout, stderr, record_process=record_process),
+            },
         )
 
     # Trust the numeric score against our threshold; the judge's own "pass" is advisory.
@@ -124,5 +160,6 @@ def llm_judge_grader(run: "RunResult", spec: dict[str, Any]) -> GradeResult:
         reason=f"score {score:g}/10 (≥{threshold:g} ⇒ {'pass' if passed else 'fail'})"
         + (f" — {reason}" if reason else ""),
         details={"score_10": score, "threshold": threshold, "judge_reason": reason,
-                 "judge_pass": verdict.get("pass"), "model": model},
+                 "judge_pass": verdict.get("pass"), "model": model,
+                 **_judge_process_details(judge_prompt, stdout, stderr, record_process=record_process)},
     )
