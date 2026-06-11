@@ -16,6 +16,7 @@ same ``on_event`` progress stream. Events are plain dicts (JSON-friendly):
 from __future__ import annotations
 
 import json
+import shutil
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from datetime import datetime
 from pathlib import Path
@@ -23,7 +24,7 @@ from threading import Event
 from typing import Any, Callable, Optional
 
 from .config import DATASETS_DIR, RUNS_DIR
-from .dataset import load_dataset, load_dataset_text
+from .dataset import Case, load_dataset, load_dataset_text
 from .graders import grade_case
 from .persist import load_raw, metrics, save_raw
 from .presets import (  # noqa: F401 - re-exported for the web layer
@@ -176,6 +177,191 @@ def execute_run(
     return str(run_dir)
 
 
+def _run_dir_for_id(run_id: str, runs_root: Optional[Path] = None) -> Path:
+    raw = (run_id or "").strip()
+    if not raw or "/" in raw or "\\" in raw or raw.startswith("."):
+        raise ValueError(f"invalid run id: {run_id!r}")
+    root = (runs_root or RUNS_DIR).resolve()
+    path = (root / raw).resolve()
+    if path.parent != root:
+        raise ValueError(f"run id escapes runs/: {run_id!r}")
+    return path
+
+
+def delete_run(run_id: str, runs_root: Optional[Path] = None) -> dict[str, Any]:
+    """Delete one historical run directory under runs/."""
+    run_dir = _run_dir_for_id(run_id, runs_root)
+    if not run_dir.is_dir():
+        raise FileNotFoundError(f"run not found: {run_id}")
+    shutil.rmtree(run_dir)
+    return {"run_id": run_id, "deleted": True}
+
+
+def _unique_run_dir(runs_root: Path, prefix: Optional[str] = None) -> tuple[str, Path]:
+    base = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_id = f"{base}_{prefix}" if prefix else base
+    run_dir = runs_root / run_id
+    n = 2
+    while run_dir.exists():
+        run_id = f"{base}_{prefix}_{n}" if prefix else f"{base}_{n}"
+        run_dir = runs_root / run_id
+        n += 1
+    return run_id, run_dir
+
+
+def _case_from_raw(raw: dict[str, Any], dataset_cases: dict[str, Case]) -> Case:
+    case_id = str(raw["case_id"])
+    if case_id in dataset_cases:
+        return dataset_cases[case_id]
+    return Case(
+        id=case_id,
+        prompt=str(raw.get("prompt", "")),
+        type=str(raw.get("type", "task")),
+        toolsets=raw.get("toolsets"),
+        skills=raw.get("skills"),
+        model=raw.get("model"),
+        provider=raw.get("provider"),
+        graders=list(raw.get("graders") or []),
+    )
+
+
+def execute_rerun_failed(
+    run_id: str,
+    *,
+    out: Optional[str] = None,
+    cancel_event: Optional[Event] = None,
+    on_event: OnEvent = None,
+) -> str:
+    """Rerun failed cases in-place, then refresh this run's report."""
+    source_dir = _run_dir_for_id(run_id)
+    report_path = source_dir / "report.json"
+    if not report_path.is_file():
+        raise FileNotFoundError(f"no report.json for run {run_id} — grade it first")
+    report = json.loads(report_path.read_text())
+    failed_ids = [c["case_id"] for c in report.get("cases") or [] if not c.get("passed")]
+    if not failed_ids:
+        raise ValueError(f"run {run_id} has no failed cases to rerun")
+
+    source_manifest = (
+        json.loads((source_dir / "manifest.json").read_text())
+        if (source_dir / "manifest.json").is_file()
+        else {}
+    )
+    dataset_cases: dict[str, Case] = {}
+    dataset_path = source_manifest.get("dataset")
+    if dataset_path:
+        try:
+            dataset_cases = {c.id: c for c in load_dataset(dataset_path)}
+        except Exception:
+            dataset_cases = {}
+
+    cases: list[Case] = []
+    for case_id in failed_ids:
+        raw_path = source_dir / "raw" / f"{case_id}.json"
+        if not raw_path.is_file():
+            raise FileNotFoundError(f"no raw trajectory for {run_id}/{case_id}")
+        raw, _ = load_raw(raw_path)
+        cases.append(_case_from_raw(raw, dataset_cases))
+
+    runner_cfg = dict(source_manifest.get("runner") or {})
+    concurrency = max(1, int(runner_cfg.get("concurrency") or 1))
+    manifest = {
+        **source_manifest,
+        "run_id": run_id,
+        "dataset": source_manifest.get("dataset"),
+        "case_count": source_manifest.get("case_count") or len(list((source_dir / "raw").glob("*.json"))),
+        "last_rerun_at": datetime.now().isoformat(timespec="seconds"),
+        "rerun": {"mode": "failed_in_place", "case_ids": failed_ids},
+        "runner": runner_cfg,
+    }
+    reruns = list(source_manifest.get("reruns") or [])
+    reruns.append({"mode": "failed_in_place", "case_ids": failed_ids, "at": manifest["last_rerun_at"]})
+    manifest["reruns"] = reruns
+    (source_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2))
+
+    model = runner_cfg.get("model")
+    provider = runner_cfg.get("provider")
+    profile = runner_cfg.get("profile")
+    timeout = float(runner_cfg.get("timeout") or 600.0)
+    max_turns = runner_cfg.get("max_turns")
+    toolsets = runner_cfg.get("toolsets")
+    yolo = bool(runner_cfg.get("yolo", True))
+    accept_hooks = bool(runner_cfg.get("accept_hooks", True))
+    ignore_rules = bool(runner_cfg.get("ignore_rules", True))
+
+    _emit(on_event, type="run_start", run_id=run_id, run_dir=str(source_dir), total=len(cases))
+    cancelled = False
+
+    def run_case(i: int, case: Case) -> None:
+        _emit(on_event, type="case_start", i=i, total=len(cases), case_id=case.id)
+        run = run_prompt(
+            case.prompt,
+            case_id=case.id,
+            model=model or case.model,
+            provider=provider or case.provider,
+            toolsets=toolsets or case.toolsets,
+            skills=case.skills,
+            profile=profile,
+            max_turns=max_turns,
+            timeout=timeout,
+            yolo=yolo,
+            accept_hooks=accept_hooks,
+            ignore_rules=ignore_rules,
+            cancel_event=cancel_event,
+        )
+        save_raw(source_dir, case, run)
+        _emit(
+            on_event, type="case_done", i=i, total=len(cases), case_id=case.id,
+            ok=run.ok, wall_clock=run.wall_clock, session_id=run.session_id, error=run.error,
+            diagnostics=run.diagnostics[-4000:] if run.diagnostics else "",
+            stderr=run.stderr[-2000:] if run.stderr else "",
+        )
+
+    if concurrency == 1:
+        for i, case in enumerate(cases, 1):
+            if cancel_event is not None and cancel_event.is_set():
+                cancelled = True
+                break
+            run_case(i, case)
+            if cancel_event is not None and cancel_event.is_set():
+                cancelled = True
+                break
+    else:
+        case_iter = iter(enumerate(cases, 1))
+        futures: set[Future[None]] = set()
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            while len(futures) < concurrency:
+                if cancel_event is not None and cancel_event.is_set():
+                    cancelled = True
+                    break
+                try:
+                    i, case = next(case_iter)
+                except StopIteration:
+                    break
+                futures.add(pool.submit(run_case, i, case))
+
+            while futures:
+                done, futures = wait(futures, return_when=FIRST_COMPLETED)
+                for fut in done:
+                    fut.result()
+                if cancel_event is not None and cancel_event.is_set():
+                    cancelled = True
+                    continue
+                while len(futures) < concurrency:
+                    try:
+                        i, case = next(case_iter)
+                    except StopIteration:
+                        break
+                    futures.add(pool.submit(run_case, i, case))
+
+    if cancelled:
+        raw_count = len(list((source_dir / "raw").glob("*.json"))) if (source_dir / "raw").is_dir() else 0
+        _emit(on_event, type="run_cancelled", completed=raw_count, total=len(cases))
+    elif (source_dir / "raw").is_dir():
+        execute_grade(str(source_dir), cancel_event=cancel_event, on_event=on_event)
+    return str(source_dir)
+
+
 # ---- grade -----------------------------------------------------------------
 
 
@@ -276,9 +462,42 @@ def list_runs(runs_root: Optional[Path] = None) -> list[dict[str, Any]]:
 
 def get_report(run_id: str, runs_root: Optional[Path] = None) -> dict[str, Any]:
     root = runs_root or RUNS_DIR
-    rp = root / run_id / "report.json"
+    run_dir = root / run_id
+    rp = run_dir / "report.json"
     if not rp.is_file():
-        raise FileNotFoundError(f"no report.json for run {run_id} — grade it first")
+        manifest_path = run_dir / "manifest.json"
+        if not manifest_path.is_file():
+            raise FileNotFoundError(f"no report.json for run {run_id} — grade it first")
+        manifest = json.loads(manifest_path.read_text())
+        raw_paths = sorted((run_dir / "raw").glob("*.json")) if (run_dir / "raw").is_dir() else []
+        cases = []
+        by_type: dict[str, dict[str, int]] = {}
+        for raw_path in raw_paths:
+            d, run = load_raw(raw_path)
+            case_type = d.get("type", "task")
+            by_type.setdefault(case_type, {"total": 0, "passed": 0})["total"] += 1
+            cases.append({
+                "case_id": d["case_id"],
+                "type": case_type,
+                "passed": None,
+                "ungraded": True,
+                "error": run.error,
+                "grades": [],
+                "metrics": metrics(run),
+                "answer": run.answer,
+                "session_id": run.session_id,
+            })
+        return {
+            "manifest": {**manifest, "graded": False},
+            "summary": {
+                "total": len(cases),
+                "passed": 0,
+                "pass_rate": 0.0,
+                "by_type": by_type,
+                "graded": False,
+            },
+            "cases": cases,
+        }
     return json.loads(rp.read_text())
 
 

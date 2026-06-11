@@ -221,6 +221,16 @@ def api_run(run_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(exc))
 
 
+@app.delete("/api/runs/{run_id}")
+def api_delete_run(run_id: str) -> dict[str, Any]:
+    try:
+        return service.delete_run(run_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
 @app.get("/api/runs/{run_id}/cases/{case_id}")
 def api_case(run_id: str, case_id: str) -> dict[str, Any]:
     try:
@@ -298,6 +308,19 @@ def api_start_grade(run_id: str) -> dict[str, Any]:
         job_id,
         service.execute_grade,
         str(service.RUNS_DIR / run_id),
+        cancel_event=_get_cancel_event(job_id),
+        on_event=_make_emitter(job_id),
+    )
+    return {"job_id": job_id}
+
+
+@app.post("/api/runs/{run_id}/rerun-failed")
+def api_start_rerun_failed(run_id: str) -> dict[str, Any]:
+    job_id = _new_job("rerun_failed")
+    _run_in_thread(
+        job_id,
+        service.execute_rerun_failed,
+        run_id,
         cancel_event=_get_cancel_event(job_id),
         on_event=_make_emitter(job_id),
     )

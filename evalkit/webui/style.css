@@ -84,6 +84,13 @@ select:focus, input:focus { outline: none; border-color: var(--accent); }
 .runs-list li.active { border-color: var(--accent); background: var(--panel-2); }
 .runs-list .run-id { font-weight: 600; font-size: 13px; }
 .runs-list .run-sub { color: var(--muted); font-size: 12px; margin-top: 2px; display: flex; justify-content: space-between; }
+.run-item-row { display: flex; align-items: center; gap: 8px; }
+.run-item-row .run-id { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.run-del { flex-shrink: 0; opacity: 0; transition: opacity .12s; }
+.runs-list li:hover .run-del { opacity: .75; }
+.run-del:hover { opacity: 1; border-color: var(--red); color: var(--red); }
+.run-confirm { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.run-confirm span { flex: 1; }
 
 /* ---- progress log ---- */
 .log {
