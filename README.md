@@ -1,184 +1,169 @@
-# Hermes Agent 测评平台
+[中文文档](README.zh-CN.md)
 
-这是一个基于 Hermes CLI 的自动化测评平台。平台读取 `datasets/*.yaml` 中的测试用例，调用 Hermes Agent 执行任务，导出完整 Session 轨迹，并根据配置检查：
+# Hermes Agent Evaluation Platform
 
-- 是否调用了指定 Skill 或 Tool
-- Tool 参数和执行结果是否符合要求
-- 最终回答质量是否达标
-- 耗时、Token、API 调用次数和成本是否超过限制
+This platform evaluates whether Hermes Agent behaves correctly for a defined set of user requests. It runs YAML-based test cases through the local Hermes CLI, records each session, checks expected Skill and Tool usage, optionally evaluates answer quality and operational limits, and produces repeatable reports for comparing Agent configurations.
 
-平台提供 Web 控制台和命令行两种使用方式。它不是 Hermes Agent 本体，运行前必须先安装并配置好 Hermes。
+Use it to validate Agent routing, Skill selection, Tool calls, tool arguments, failure handling, response quality, latency, token usage, and cost before releasing changes to a Hermes environment.
 
-## 1. 安装与启动
+## 1. Installation and Startup
 
-### 1.1 环境要求
+### 1.1 Requirements
 
-- Python 3.11 或更高版本
-- `uv` Python 包管理工具
-- 已安装并配置好的 Hermes CLI
-- 可以通过 `hermes --version` 找到 Hermes
-- Hermes 已配置可用的模型、Skill 和 Tool
+- Python 3.11 or later
+- The `uv` Python package manager
+- An installed and configured Hermes CLI
+- A working Hermes model, Skills, and Tools
 
-先检查 Hermes：
+Verify Hermes before installing this platform:
 
 ```bash
 hermes --version
 hermes status
 ```
 
-如果 `hermes` 不在 `PATH` 中，可以设置其绝对路径：
+If Hermes is not available on `PATH`, set its executable path.
+
+Linux:
 
 ```bash
-export HERMES_BIN=<Hermes可执行文件路径>
+export HERMES_BIN=<path-to-hermes>
 ```
 
-Windows PowerShell：
+Windows PowerShell:
 
 ```powershell
-$env:HERMES_BIN="<Hermes可执行文件路径>"
+$env:HERMES_BIN="<path-to-hermes>"
 ```
 
-### 1.2 Linux 安装
+### 1.2 Linux
 
-解压项目后进入项目根目录：
+Extract the project and enter its root directory:
 
 ```bash
-cd <项目目录>
+cd <project-directory>
 ```
 
-如果没有安装 `uv`：
+Install `uv` if necessary:
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 source ~/.bashrc
 ```
 
-安装项目依赖：
+Install the project dependencies:
 
 ```bash
 uv sync
 ```
 
-启动 Web 服务：
+Start the Web service:
 
 ```bash
 uv run python -m evalkit.cli serve --host 0.0.0.0 --port 8765
 ```
 
-浏览器访问：
+Open:
 
 ```text
-http://<服务器地址>:8765
+http://<server-address>:8765
 ```
 
-后台启动：
+Run the service in the background:
 
 ```bash
 nohup uv run python -m evalkit.cli serve --host 0.0.0.0 --port 8765 \
   > evalkit.log 2>&1 &
 ```
 
-查看日志和监听端口：
+View logs and check the listening port:
 
 ```bash
 tail -f evalkit.log
 ss -lntp | grep 8765
 ```
 
-停止服务：
+Stop the service:
 
 ```bash
 pkill -f "evalkit.cli serve"
 ```
 
-如果服务暴露到其他机器，请配置防火墙或云安全组。当前平台没有用户登录功能，不建议直接暴露到公网。可以让服务只监听本机：
+The platform does not provide user authentication. Do not expose it directly to the public Internet. To use an SSH tunnel, start the service on `127.0.0.1`:
 
 ```bash
 uv run python -m evalkit.cli serve --host 127.0.0.1 --port 8765
 ```
 
-然后从客户端建立 SSH 隧道：
+Then create a tunnel from the client:
 
 ```bash
-ssh -L 8765:127.0.0.1:8765 <用户>@<服务器地址>
+ssh -L 8765:127.0.0.1:8765 <user>@<server-address>
 ```
 
-浏览器仍访问 `http://127.0.0.1:8765`。
+Open `http://127.0.0.1:8765` locally.
 
-### 1.3 Windows 安装
+### 1.3 Windows
 
-在 PowerShell 中安装 `uv`：
+Install `uv` in PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
-重新打开 PowerShell，然后进入项目目录：
+Open a new PowerShell window, enter the project directory, and install dependencies:
 
 ```powershell
-cd <项目目录>
+cd <project-directory>
 uv sync
 ```
 
-确认项目环境和 Hermes：
+Verify the environment:
 
 ```powershell
 uv run python --version
 hermes --version
 ```
 
-启动 Web 服务：
+Start the Web service:
 
 ```powershell
 uv run python -m evalkit.cli serve --host 127.0.0.1 --port 8765
 ```
 
-浏览器访问：
+Open:
 
 ```text
 http://127.0.0.1:8765
 ```
 
-不要直接使用系统 Python 启动：
+Always use `uv run python` so that the project virtual environment and dependencies are used.
 
-```powershell
-python -m evalkit.cli serve
-```
+## 2. Using the Platform
 
-如果出现 `No module named 'fire'`，说明使用了错误的 Python 环境。请使用 `uv run python ...`，或者先激活虚拟环境：
+### 2.1 Run an Evaluation in the Web UI
 
-```powershell
-.\.venv\Scripts\Activate.ps1
-python -m evalkit.cli serve --port 8765
-```
+1. Start the service and open the Web UI.
+2. Open the **Evaluation** page.
+3. Select a dataset from `datasets/`.
+4. Select a runner preset.
+5. Optionally override the model for this run.
+6. Set the concurrency. Start with `1` for real external systems.
+7. Click **Run Evaluation**.
+8. Monitor progress. When grading finishes, the platform opens the report in **History**.
 
-## 2. 使用平台
+Evaluation calls real models and Tools. It may incur model cost and access real business resources.
 
-### 2.1 Web 页面运行评测
+### 2.2 Command-Line Usage
 
-1. 启动服务并打开 `http://127.0.0.1:8765`。
-2. 进入“评测”页面。
-3. 选择 `datasets/` 下的数据集。
-4. 选择运行预设。
-5. 按需填写本次模型覆盖。
-6. 设置并发数。第一次运行建议使用 `1`。
-7. 点击“运行评测”。
-8. 等待运行和评分完成，页面会自动跳转到“历史”报告。
-
-运行过程中可以查看每条用例的状态，也可以点击“停止”请求取消尚未执行的任务。
-
-注意：评测会真实调用模型和 Tool，可能产生模型费用并访问实际业务资源。
-
-### 2.2 命令行运行
-
-运行整个数据集并自动评分：
+Run and grade a complete dataset:
 
 ```bash
 uv run python -m evalkit.cli run \
   --dataset datasets/database-top-scene-handler.yaml
 ```
 
-指定并发数：
+Set concurrency:
 
 ```bash
 uv run python -m evalkit.cli run \
@@ -186,7 +171,7 @@ uv run python -m evalkit.cli run \
   --concurrency 4
 ```
 
-指定模型：
+Override the model:
 
 ```bash
 uv run python -m evalkit.cli run \
@@ -194,7 +179,7 @@ uv run python -m evalkit.cli run \
   --model provider/model-name
 ```
 
-只运行并保存轨迹，不立即评分：
+Run without grading:
 
 ```bash
 uv run python -m evalkit.cli run \
@@ -202,19 +187,19 @@ uv run python -m evalkit.cli run \
   --grade false
 ```
 
-重新评分：
+Grade an existing run:
 
 ```bash
 uv run python -m evalkit.cli grade runs/<run-id>
 ```
 
-查看报告：
+Display a report:
 
 ```bash
 uv run python -m evalkit.cli report runs/<run-id>
 ```
 
-查看某条用例的完整轨迹：
+Display the full trajectory of one case:
 
 ```bash
 uv run python -m evalkit.cli show \
@@ -222,9 +207,9 @@ uv run python -m evalkit.cli show \
   --case <case-id>
 ```
 
-### 2.3 结果目录
+### 2.3 Result Files
 
-每次运行都会在 `runs/` 下生成一个时间戳目录：
+Each run creates a timestamped directory:
 
 ```text
 runs/<run-id>/
@@ -237,47 +222,49 @@ runs/<run-id>/
 └── report.md
 ```
 
-- `manifest.json`：数据集、模型、预设和 runner 参数。
-- `raw/`：Hermes 原始回答、Session 轨迹和运行信息。
-- `graded/`：每条用例的评分结果及失败原因。
-- `report.json`：结构化汇总报告。
-- `report.md`：便于人工阅读的 Markdown 报告。
+- `manifest.json`: dataset, model, preset, and runner configuration.
+- `raw/`: Hermes output, exported session trajectory, errors, and diagnostics.
+- `graded/`: grader results and failure reasons for each case.
+- `report.json`: structured aggregate report.
+- `report.md`: human-readable report.
 
-## 3. 编写 YAML 测试用例
+When Hermes exits with an error but provides a Session ID, the platform attempts to export that Session and collect session-scoped Hermes logs. The Web trajectory view then shows the run error, diagnostics, and any messages or Tool calls recorded before the failure.
 
-### 3.1 文件位置和基本格式
+## 3. Writing YAML Test Cases
 
-数据集放在 `datasets/` 下，扩展名为 `.yaml` 或 `.yml`。文件顶层必须是列表：
+### 3.1 Dataset Format
+
+Datasets are stored in `datasets/` as `.yaml` or `.yml` files. The top level must be a YAML list:
 
 ```yaml
 - id: example-case
   type: tool_use
-  prompt: "列出我的数据库实例"
+  prompt: "List my database instances."
   graders:
     - kind: tool_call
       must_call: list_database_info
 ```
 
-同一个文件中的 `id` 必须唯一。
+Every `id` must be unique within the file.
 
-### 3.2 Case 字段
+### 3.2 Case Fields
 
-| 字段 | 必填 | 含义 |
+| Field | Required | Description |
 | --- | --- | --- |
-| `id` | 是 | 用例唯一 ID，也用于生成结果文件名。 |
-| `prompt` | 是 | 发送给 Hermes 的用户问题。 |
-| `type` | 否 | 报告分组名称，例如 `qa`、`tool_use`、`clarification`、`task`。不影响执行逻辑。 |
-| `toolsets` | 否 | 本用例启用的 Hermes Toolset，例如 `[skills]`。 |
-| `skills` | 否 | 运行前预加载的 Skill 列表。 |
-| `model` | 否 | 本用例使用的模型覆盖。 |
-| `provider` | 否 | 本用例使用的 Provider 覆盖。 |
-| `graders` | 建议 | 评分规则列表。所有 grader 都通过，用例才通过。 |
+| `id` | Yes | Unique case ID and result filename. |
+| `prompt` | Yes | User request sent to Hermes. |
+| `type` | No | Report grouping, such as `qa`, `tool_use`, `clarification`, or `task`. It does not change execution behavior. |
+| `toolsets` | No | Hermes Toolsets enabled for this case, for example `[skills]`. |
+| `skills` | No | Skills preloaded before the case runs. |
+| `model` | No | Model override for this case. |
+| `provider` | No | Provider override for this case. |
+| `graders` | Recommended | Assertions used to grade the result. All configured graders must pass. |
 
-运行预设或命令行指定的模型、Provider、Toolset 会优先于用例配置。
+Run-level presets and CLI overrides take precedence over case-level model, provider, and Toolset configuration.
 
-### 3.3 Tool 调用评分
+### 3.3 Tool and Skill Assertions
 
-检查必须调用某个 Tool：
+Require a Tool call:
 
 ```yaml
 graders:
@@ -286,7 +273,7 @@ graders:
     expect_success: true
 ```
 
-检查加载了指定 Skill：
+Require a specific Skill:
 
 ```yaml
 - kind: tool_call
@@ -296,7 +283,7 @@ graders:
   expect_success: true
 ```
 
-检查多个 Tool 都被调用：
+Require multiple Tool calls:
 
 ```yaml
 graders:
@@ -308,44 +295,44 @@ graders:
     expect_success: true
 ```
 
-其他字段：
+Available fields:
 
-| 字段 | 含义 |
+| Field | Description |
 | --- | --- |
-| `must_call` | 必须调用的 Tool，可以是字符串或列表。 |
-| `must_call_any` | 给定多个 Tool，至少调用其中一个。 |
-| `must_not_call` | 不允许调用的 Tool。 |
-| `args_match` | Tool 参数子集必须精确匹配。 |
-| `expect_success` | `true` 表示 Tool 结果中不能出现明显错误。 |
+| `must_call` | Tool or list of Tools that must be called. |
+| `must_call_any` | At least one Tool from the list must be called. |
+| `must_not_call` | Tool or list of Tools that must not be called. |
+| `args_match` | Required exact subset of parsed Tool arguments. |
+| `expect_success` | Checks whether the matching Tool result appears successful. |
 
-当前 grader 检查 Tool 是否出现，不检查多个 Tool 的调用顺序。`expect_success` 根据 Tool 返回文本中的错误关键词进行启发式判断。
+The current grader checks whether Tool calls occurred, but it does not validate call order. Tool success detection is heuristic and is based on error markers in the Tool result.
 
-### 3.4 最终回答评分
+### 3.4 Answer-Quality Grading
 
-使用 `llm_judge` 让另一个模型根据规则评价最终回答：
+Use `llm_judge` to evaluate the final answer:
 
 ```yaml
 - id: explain-404
   type: qa
-  prompt: "解释 HTTP 404 的含义。"
+  prompt: "Explain what HTTP 404 means."
   graders:
     - kind: llm_judge
       rubric: >
-        是否说明 404 表示资源未找到；
-        表达是否准确、清晰、简洁。
+        The answer should explain that 404 means the requested resource
+        was not found and should be accurate and concise.
       pass_threshold: 7
 ```
 
-| 字段 | 含义 |
+| Field | Description |
 | --- | --- |
-| `rubric` | 评分标准。 |
-| `pass_threshold` | 0 到 10 的通过阈值，默认 7。 |
-| `model` | 可选的裁判模型。 |
-| `judge_timeout` | 裁判调用超时时间，默认 120 秒。 |
+| `rubric` | Evaluation criteria. |
+| `pass_threshold` | Passing score from 0 to 10. Default: 7. |
+| `model` | Optional judge model override. |
+| `judge_timeout` | Judge timeout in seconds. Default: 120. |
 
-`llm_judge` 会额外调用一次模型，因此会增加耗时和费用。重新评分也会重新调用裁判模型。
+`llm_judge` makes an additional model request. Regrading cases that use it also makes another judge request.
 
-### 3.5 性能和成本评分
+### 3.5 Timing and Cost Limits
 
 ```yaml
 - kind: timing
@@ -357,119 +344,121 @@ graders:
   max_cost_usd: 0.05
 ```
 
-所有字段都是上限。Provider 未提供成本数据时，成本检查会跳过。
+Every configured value is an upper limit. Cost checks are skipped when the Provider does not report cost data.
 
-### 3.6 创建自己的数据集
+### 3.6 Create a Custom Dataset
 
-可以直接复制现有文件：
+Copy an existing dataset:
+
+Linux:
 
 ```bash
 cp datasets/tasks.yaml datasets/my-eval.yaml
 ```
 
-Windows PowerShell：
+Windows PowerShell:
 
 ```powershell
 Copy-Item datasets\tasks.yaml datasets\my-eval.yaml
 ```
 
-也可以在 Web 页面进入“数据集”，点击“＋”新建文件。建议流程：
+You can also create a dataset from the **Datasets** page in the Web UI.
 
-1. 先编写 1 至 3 条用例。
-2. 使用不同用户表达覆盖同一场景。
-3. Tool 测试使用 `tool_call`。
-4. 输出质量测试使用 `llm_judge`。
-5. 增加 `timing` 防止异常长时间运行。
-6. 在 Web 编辑器中确认 YAML 校验通过。
-7. 先“试跑”一条输入，核对真实 Tool 名和参数。
-8. 再批量运行完整数据集。
+Recommended workflow:
 
-## 4. Web 页面功能
+1. Start with one to three cases.
+2. Add different user phrasings for the same scenario.
+3. Use `tool_call` for Skill and Tool behavior.
+4. Use `llm_judge` for answer quality.
+5. Add `timing` limits to prevent unexpectedly long runs.
+6. Validate the YAML in the Web editor.
+7. Use a trial run to inspect real Tool names and arguments.
+8. Run the complete dataset.
 
-### 4.1 评测
+## 4. Web UI
 
-“评测”页面用于发起批量运行：
+### 4.1 Evaluation
 
-- 选择数据集
-- 选择运行预设
-- 临时覆盖模型
-- 设置并发数
-- 查看实时进度
-- 请求停止运行
+The **Evaluation** page supports:
 
-并发数越高，对模型服务和业务 Tool 的压力越大。涉及真实数据库或外部系统时建议从 `1` 开始。
+- Dataset selection
+- Runner preset selection
+- One-time model override
+- Concurrency configuration
+- Live progress
+- Run cancellation
 
-### 4.2 数据集
+Higher concurrency increases load on the model service and business Tools. Start with `1` when testing real systems.
 
-“数据集”页面支持：
+### 4.2 Datasets
 
-- 新建、选择、编辑、保存和删除 YAML 数据集
-- 实时校验 YAML 结构
-- 插入 QA、Tool 调用和综合任务模板
-- 插入 `tool_call`、`timing`、`llm_judge` grader
-- 查看可用 Toolset 名称
-- 输入单条 Prompt 进行试跑
-- 查看试跑产生的完整 Tool 调用轨迹
-- 将观察到的 Tool 调用转换成 YAML 断言
+The **Datasets** page supports:
 
-试跑会真实调用 Hermes，但不会写入正式的 `runs/` 报告目录。
+- Creating, selecting, editing, saving, and deleting YAML datasets
+- Live YAML validation
+- Inserting QA, Tool-use, and general-task templates
+- Inserting `tool_call`, `timing`, and `llm_judge` graders
+- Viewing known Toolset names
+- Running one prompt as a trial
+- Inspecting the resulting Tool trajectory
+- Converting observed Tool calls into YAML assertions
 
-### 4.3 运行预设和 Agent 模式
+A trial run calls Hermes but does not create a formal run under `runs/`.
 
-“预设”页面用于保存一组可重复使用的 Hermes runner 参数。可以为快速测试、严格测试或不同 Agent 环境分别建立预设。
+### 4.3 Runner Presets and Agent Modes
 
-可配置字段：
+The **Presets** page stores reusable Hermes runner configurations. Create separate presets for fast tests, strict tests, different models, or isolated Agent environments.
 
-| 字段 | 含义 |
+| Field | Description |
 | --- | --- |
-| `model` | Hermes 模型；留空使用 Hermes 默认模型。 |
-| `provider` | 模型 Provider；留空使用默认配置。 |
-| `profile` | Hermes Profile，用于隔离配置和 Session。 |
-| `toolsets` | 覆盖所有用例的 Toolset，逗号分隔。留空使用用例自己的配置。 |
-| `max_turns` | Agent 最大工具迭代轮数。 |
-| `timeout` | 每条用例的超时时间。 |
-| `yolo` | 跳过危险操作审批。 |
-| `accept_hooks` | 自动批准 Shell Hook。 |
-| `ignore_rules` | 不注入规则、Memory 和预加载 Skill，形成更干净的评测环境。 |
+| `model` | Hermes model. Empty means the Hermes default. |
+| `provider` | Model Provider. Empty means the default Provider. |
+| `profile` | Hermes Profile used to isolate configuration and Sessions. |
+| `toolsets` | Comma-separated run-level Toolset override. Empty uses each case configuration. |
+| `max_turns` | Maximum Agent Tool iterations. |
+| `timeout` | Timeout for each case. |
+| `yolo` | Bypass dangerous-operation approvals. |
+| `accept_hooks` | Automatically approve Shell Hooks. |
+| `ignore_rules` | Skip rules, Memory, and preloaded Skills for a cleaner evaluation environment. |
 
-示例“快速模式”：
+Example fast preset:
 
 ```text
-名称: quick
-model: 留空
-provider: 留空
-profile: 留空
-toolsets: 留空
+name: quick
+model: empty
+provider: empty
+profile: empty
+toolsets: empty
 max_turns: 15
 timeout: 180
-yolo: 开
-accept_hooks: 开
-ignore_rules: 开
+yolo: enabled
+accept_hooks: enabled
+ignore_rules: enabled
 ```
 
-如果需要测试一个预先配置好的 Agent，可以填写对应 `profile`。如果希望测试 Hermes 的真实用户环境，应谨慎使用 `ignore_rules`；开启后会跳过规则、Memory 等上下文。
+Use `profile` when evaluating a separately configured Agent environment. Use `ignore_rules` carefully: enabling it removes rules, Memory, and other context that may normally affect Agent behavior.
 
-预设保存在根目录的 `runner_presets.json`。评测页面选择预设后，单次填写的模型会覆盖预设模型。
+Presets are stored in `runner_presets.json`. A model entered on the Evaluation page overrides the model in the selected preset for that run.
 
-### 4.4 历史和测试结果
+### 4.4 History and Reports
 
-“历史”页面列出所有 `runs/<run-id>`：
+The **History** page shows:
 
-- 模型和数据集
-- 总用例数
-- 通过数和通过率
-- 按 `type` 分组的通过情况
-- 每条用例的 grader 结果
-- 耗时、Tool 次数、API 次数、Token 和成本
+- Model and dataset
+- Total, passed, and failed cases
+- Pass rate
+- Results grouped by `type`
+- Grader results for every case
+- Duration, Tool calls, API calls, tokens, and cost
 
-点击某条用例可以打开轨迹抽屉，查看：
+Click a case to inspect:
 
-- 用户输入
-- Hermes 最终回答
-- 每次 Tool 调用及参数
-- Tool 返回结果
+- User input
+- Hermes final answer
+- Tool calls and arguments
+- Tool results
 - Session ID
-- grader 配置；评分结果可在报告表格中查看
-- 运行错误和指标
+- Grader details
+- Run errors and Hermes diagnostics
 
-点击“重新打分”会使用已经保存的 `raw/` 轨迹再次运行 grader，不会重新执行原始 Agent 任务。但包含 `llm_judge` 时，重新打分仍会额外调用裁判模型。
+Click **Regrade** to run graders again against the stored `raw/` trajectory without rerunning the original Agent task. Cases using `llm_judge` still make a new judge-model request.
