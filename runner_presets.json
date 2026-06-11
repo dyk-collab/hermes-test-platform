@@ -16,7 +16,7 @@
     "profile": null,
     "toolsets": null,
     "max_turns": 5,
-    "timeout": 8.0,
+    "timeout": 15.0,
     "yolo": true,
     "accept_hooks": true,
     "ignore_rules": true

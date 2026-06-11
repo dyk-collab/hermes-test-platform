@@ -27,6 +27,7 @@ let currentRunId = null;
 let META = { toolsets: [], grader_kinds: [], case_templates: [] };
 let PRESETS = []; // 缓存的 runner 预设列表
 let currentPreset = null; // 预设页正在编辑的预设名
+let RUNS = []; // 缓存的历史运行摘要
 
 // ---- 视图导航 --------------------------------------------------------------
 function showView(name) {
@@ -72,16 +73,26 @@ async function loadDatasets() {
 async function loadRuns() {
   try {
     const { runs } = await api("/api/runs");
+    RUNS = runs || [];
     const list = $("#runs-list");
     list.innerHTML = "";
-    if (!runs.length) {
+    if (!RUNS.length) {
       list.appendChild(el("li", "muted", "暂无历史运行"));
       return;
     }
-    runs.forEach((r) => {
+    RUNS.forEach((r) => {
       const li = el("li");
       if (r.run_id === currentRunId) li.classList.add("active");
-      li.appendChild(el("div", "run-id", r.run_id));
+      const row = el("div", "run-item-row");
+      row.appendChild(el("div", "run-id", r.run_id));
+      const del = el("button", "btn tiny run-del", "删除");
+      del.title = "删除这条历史运行";
+      del.onclick = (e) => {
+        e.stopPropagation();
+        confirmDeleteRun(li, r.run_id);
+      };
+      row.appendChild(del);
+      li.appendChild(row);
       const sub = el("div", "run-sub");
       const rate =
         r.pass_rate != null ? `${Math.round(r.pass_rate * 100)}% (${r.passed}/${r.total})` : "未打分";
@@ -101,17 +112,69 @@ async function openRun(runId) {
   currentRunId = runId;
   showView("history");
   await loadRuns(); // 更新左栏高亮
+  const summary = RUNS.find((r) => r.run_id === runId);
+  if (summary && !summary.graded) {
+    renderUngradedRun(summary);
+    return;
+  }
   try {
     const report = await api(`/api/runs/${runId}`);
     renderReport(report);
   } catch (e) {
+    if (summary) renderUngradedRun(summary, e.message);
     setHint("该运行尚未打分或读取失败：" + e.message);
   }
 }
 
-function renderReport(report) {
+function renderUngradedRun(run, message) {
   $("#history-empty").classList.add("hidden");
   $("#report-panel").classList.remove("hidden");
+  $("#report-title").textContent = `运行 · ${run.run_id}`;
+  $("#report-meta").textContent =
+    `数据集 ${run.dataset || "?"} · 模型 ${run.model || "默认模型"} · ${run.started_at || ""}`;
+
+  const summary = $("#report-summary");
+  summary.innerHTML = "";
+  const stat = (num, lbl) => {
+    const s = el("div", "stat");
+    s.appendChild(el("div", "num", num));
+    s.appendChild(el("div", "lbl", lbl));
+    return s;
+  };
+  summary.appendChild(stat(run.case_count ?? "-", "用例数"));
+  summary.appendChild(stat("未打分", "报告状态"));
+
+  const rerunBtn = $("#rerun-failed-btn");
+  rerunBtn.disabled = true;
+  rerunBtn.textContent = "重跑失败并刷新";
+  $("#regrade-btn").textContent = "生成报告";
+
+  const tbody = $("#cases-tbody");
+  tbody.innerHTML = "";
+  const tr = el("tr");
+  tr.className = "no-hover";
+  tr.innerHTML = `
+    <td colspan="9" class="muted">
+      ${message || "这次运行还没有报告。请点击右上角“生成报告”后再查看用例结果。"}
+    </td>`;
+  tbody.appendChild(tr);
+}
+
+function renderReport(report) {
+  if (report.summary?.graded === false || report.manifest?.graded === false) {
+    renderUngradedRun({
+      run_id: report.manifest?.run_id || currentRunId,
+      dataset: report.manifest?.dataset,
+      model: report.manifest?.model,
+      started_at: report.manifest?.started_at,
+      case_count: report.manifest?.case_count ?? report.summary?.total,
+    });
+    return;
+  }
+
+  $("#history-empty").classList.add("hidden");
+  $("#report-panel").classList.remove("hidden");
+  $("#regrade-btn").textContent = "↻ 重新打分";
 
   const man = report.manifest || {};
   const sum = report.summary || {};
@@ -133,6 +196,10 @@ function renderReport(report) {
   Object.entries(sum.by_type || {}).forEach(([t, b]) =>
     summary.appendChild(stat(`${b.passed}/${b.total}`, `类型：${t}`))
   );
+  const failedCount = Math.max(0, Number(sum.total || 0) - Number(sum.passed || 0));
+  const rerunBtn = $("#rerun-failed-btn");
+  rerunBtn.disabled = failedCount === 0;
+  rerunBtn.textContent = failedCount ? `重跑失败并刷新 (${failedCount})` : "重跑失败并刷新";
 
   const tbody = $("#cases-tbody");
   tbody.innerHTML = "";
@@ -375,6 +442,7 @@ async function pollJob(jobId, onDone) {
 function enableButtons(on) {
   $("#run-btn").disabled = !on;
   $("#regrade-btn").disabled = !on;
+  $("#rerun-failed-btn").disabled = !on || $("#rerun-failed-btn").textContent === "重跑失败并刷新";
 }
 
 function setStopVisible(on) {
@@ -442,6 +510,24 @@ async function regrade() {
   }
 }
 
+async function rerunFailed() {
+  if (!currentRunId) return;
+  enableButtons(false);
+  setHint("正在重跑失败用例并刷新原报告…");
+  $("#progress-log") && ($("#progress-log").innerHTML = "");
+  renderedEvents = 0;
+  try {
+    const { job_id } = await api(`/api/runs/${currentRunId}/rerun-failed`, { method: "POST" });
+    activeJobId = job_id;
+    setStopVisible(true);
+    showView("eval");
+    pollJob(job_id);
+  } catch (e) {
+    setHint("失败重跑发起失败：" + e.message);
+    enableButtons(true);
+  }
+}
+
 async function cancelActiveJob() {
   if (!activeJobId) return;
   $("#stop-btn").disabled = true;
@@ -451,6 +537,44 @@ async function cancelActiveJob() {
   } catch (e) {
     $("#stop-btn").disabled = false;
     setHint("停止失败：" + e.message);
+  }
+}
+
+function clearCurrentReport() {
+  currentRunId = null;
+  $("#report-panel").classList.add("hidden");
+  $("#history-empty").classList.remove("hidden");
+  closeDrawer();
+}
+
+function confirmDeleteRun(li, runId) {
+  li.querySelector(".run-confirm")?.remove();
+  const bar = el("div", "run-confirm");
+  bar.appendChild(el("span", null, "确认删除？"));
+  const yes = el("button", "btn tiny danger", "删除");
+  const no = el("button", "btn tiny", "取消");
+  yes.onclick = async (e) => {
+    e.stopPropagation();
+    await deleteRun(runId);
+  };
+  no.onclick = (e) => {
+    e.stopPropagation();
+    bar.remove();
+  };
+  bar.onclick = (e) => e.stopPropagation();
+  bar.appendChild(yes);
+  bar.appendChild(no);
+  li.appendChild(bar);
+}
+
+async function deleteRun(runId) {
+  try {
+    await api(`/api/runs/${encodeURIComponent(runId)}`, { method: "DELETE" });
+    if (currentRunId === runId) clearCurrentReport();
+    await loadRuns();
+    setHint(`已删除历史运行 ${runId}`);
+  } catch (e) {
+    setHint("删除历史运行失败：" + e.message);
   }
 }
 
@@ -963,6 +1087,7 @@ async function deletePreset(name) {
 $("#run-btn").onclick = startRun;
 $("#stop-btn").onclick = cancelActiveJob;
 $("#regrade-btn").onclick = regrade;
+$("#rerun-failed-btn").onclick = rerunFailed;
 $("#refresh-runs").onclick = loadRuns;
 $("#drawer-close").onclick = closeDrawer;
 $("#drawer-overlay").onclick = closeDrawer;
