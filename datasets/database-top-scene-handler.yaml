@@ -4,9 +4,9 @@
 # - 必须加载 database-top-scene-handler skill。
 # - 必须调用 list_aksk_credentials 和 list_database_info。
 #
-# 时间缺失用例（仅检查工具行为，不评价追问文案）：
+# 信息缺失用例（仅检查 Skill 调用，不评价追问文案）：
 # - 必须加载 database-top-scene-handler skill。
-# - 实例已知但缺少时间时，不限制后续工具调用。
+# - 缺少实例或时间时，不检查后续工具调用。
 #
 # 当前不检查三个工具的调用顺序。
 
@@ -240,6 +240,36 @@
       args_match:
         name: database-top-scene-handler
       expect_success: true
+
+- id: missing-instance-cpu
+  type: clarification
+  prompt: "2026-06-08 14:35 数据库 CPU 使用率一直是 95%，帮我诊断。"
+  graders: *missing_context_graders
+
+- id: missing-instance-memory
+  type: clarification
+  prompt: "2026-06-10 09:30 内存使用率达到 99%，请帮我诊断。"
+  graders: *missing_context_graders
+
+- id: missing-instance-disk
+  type: clarification
+  prompt: "今天 10:20 数据库磁盘空间快满了，麻烦排查。"
+  graders: *missing_context_graders
+
+- id: missing-instance-slow-sql
+  type: clarification
+  prompt: "数据库最近频繁出现大量慢 SQL，帮忙排查一下。"
+  graders: *missing_context_graders
+
+- id: missing-instance-replication-delay
+  type: clarification
+  prompt: "2026-06-10 11:00 主从复制延迟超过 500 秒，请分析。"
+  graders: *missing_context_graders
+
+- id: missing-instance-replication-error
+  type: clarification
+  prompt: "昨天凌晨 3 点数据库复制中断了，请诊断。"
+  graders: *missing_context_graders
 
 - id: missing-time-memory
   type: clarification
