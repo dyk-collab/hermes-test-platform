@@ -309,6 +309,7 @@ def get_trajectory(run_id: str, case_id: str, runs_root: Optional[Path] = None) 
         "answer": run.answer,
         "session_id": run.session_id,
         "error": run.error,
+        "diagnostics": run.diagnostics,
         "graders": graded.get("grades") or d.get("graders") or [],
         "metrics": graded.get("metrics") or metrics(run),
         "messages": messages,

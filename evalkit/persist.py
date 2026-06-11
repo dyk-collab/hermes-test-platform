@@ -52,6 +52,7 @@ def save_raw(run_dir: Path, case: Case, run: RunResult) -> None:
         "wall_clock": run.wall_clock,
         "returncode": run.returncode,
         "error": run.error,
+        "diagnostics": run.diagnostics[-20000:] if run.diagnostics else "",
         "stderr": run.stderr[-2000:] if run.stderr else "",
         "session": run.session.raw if run.session else None,
     }
@@ -74,5 +75,6 @@ def load_raw(path: Path) -> tuple[dict[str, Any], RunResult]:
         session=session,
         stderr=d.get("stderr", ""),
         error=d.get("error"),
+        diagnostics=d.get("diagnostics", ""),
     )
     return d, run

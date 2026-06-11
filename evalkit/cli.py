@@ -142,6 +142,9 @@ class EvalKit:
             f"cost={s.estimated_cost_usd} ({s.cost_status})"
         )
         console.print(f"[bold]final answer:[/] {answer[:1000]}")
+        if run and case and rr.diagnostics:
+            console.rule("Hermes diagnostics")
+            console.print(rr.diagnostics)
 
     def serve(self, host: str = "127.0.0.1", port: int = 8765) -> None:
         """Launch the web control panel (http://host:port)."""

@@ -278,6 +278,12 @@ function renderTrajectory(t) {
     e.appendChild(el("div", "body", t.error));
     box.appendChild(e);
   }
+  if (t.diagnostics) {
+    const e = el("div", "msg tool");
+    e.appendChild(el("div", "who", "Hermes 诊断日志"));
+    e.appendChild(el("pre", "body", t.diagnostics));
+    box.appendChild(e);
+  }
   renderMessagesInto(box, t.messages, null);
 }
 

@@ -39,6 +39,7 @@ class RunResult:
     session: Optional[Session] = None  # parsed export (None if export failed)
     stderr: str = ""
     error: Optional[str] = None  # populated on failure to run/parse
+    diagnostics: str = ""  # session-scoped Hermes logs captured after a failure
 
     @property
     def ok(self) -> bool:
@@ -147,22 +148,55 @@ def run_prompt(
     result.stderr = stderr
     result.returncode = proc.returncode
 
+    m = _SESSION_ID_RE.search(stderr)
+    if m:
+        result.session_id = m.group(1)
+        try:
+            result.session = export_session(result.session_id, hermes_bin=hermes)
+        except Exception as exc:  # noqa: BLE001 - retain both run and export context
+            result.diagnostics = f"Session export failed: {exc}"
+
     if proc.returncode != 0:
         result.error = f"hermes exited {proc.returncode}: {stderr.strip()[:500]}"
+        if result.session_id:
+            logs = collect_session_logs(result.session_id, hermes_bin=hermes)
+            result.diagnostics = "\n".join(
+                part for part in (result.diagnostics, logs) if part
+            )
         return result
 
-    m = _SESSION_ID_RE.search(stderr)
     if not m:
         result.error = "could not find `session_id:` in hermes stderr"
         return result
-    result.session_id = m.group(1)
 
-    try:
-        result.session = export_session(result.session_id, hermes_bin=hermes)
-    except Exception as exc:  # noqa: BLE001 - surface any export/parse failure
-        result.error = f"session export failed: {exc}"
+    if result.session is None:
+        result.error = result.diagnostics or "session export failed"
 
     return result
+
+
+def collect_session_logs(
+    session_id: str,
+    *,
+    hermes_bin: Optional[str] = None,
+    lines: int = 200,
+) -> str:
+    """Return Hermes logs for one failed session without masking the run error."""
+    hermes = hermes_bin or resolve_hermes()
+    try:
+        proc = subprocess.run(
+            [hermes, "logs", "--session", session_id, "-n", str(lines)],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+    except Exception as exc:  # noqa: BLE001 - diagnostics are best-effort
+        return f"Could not collect Hermes logs: {exc}"
+
+    output = "\n".join(part.strip() for part in (proc.stdout, proc.stderr) if part.strip())
+    if proc.returncode != 0:
+        return output or f"`hermes logs` exited {proc.returncode}"
+    return output
 
 
 def _terminate_process(proc: subprocess.Popen[str]) -> None:
