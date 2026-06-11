@@ -174,3 +174,27 @@ def export_session(session_id: str, hermes_bin: Optional[str] = None) -> Session
     if not lines:
         raise RuntimeError(f"No session exported for id {session_id!r} (empty output)")
     return Session.from_export_dict(json.loads(lines[0]))
+
+
+def export_session_by_source(source: str, hermes_bin: Optional[str] = None) -> Session:
+    """Export the newest session with an exact source tag.
+
+    EvalKit assigns a unique source to each Hermes process so interrupted runs
+    can recover their session even when Hermes never prints ``session_id:``.
+    """
+    hermes = hermes_bin or resolve_hermes()
+    proc = subprocess.run(
+        [hermes, "sessions", "export", "--source", source, "-"],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"`hermes sessions export --source` failed for {source!r} "
+            f"(exit {proc.returncode}): {proc.stderr.strip()}"
+        )
+    lines = [ln for ln in proc.stdout.splitlines() if ln.strip()]
+    if not lines:
+        raise RuntimeError(f"No session exported for source {source!r}")
+    sessions = [Session.from_export_dict(json.loads(line)) for line in lines]
+    return max(sessions, key=lambda session: session.started_at or 0)

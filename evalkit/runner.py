@@ -13,12 +13,13 @@ import re
 import signal
 import subprocess
 import time
+import uuid
 from dataclasses import dataclass
 from threading import Event
 from typing import Optional
 
 from .config import resolve_hermes
-from .session import Session, export_session
+from .session import Session, export_session, export_session_by_source
 
 _SESSION_ID_RE = re.compile(r"session_id:\s*(\S+)")
 _TOO_MANY_REQUESTS_RE = re.compile(r"too many requests", re.IGNORECASE)
@@ -138,6 +139,7 @@ def _run_prompt_once(
     headless behaviour = all on); runner presets can toggle them per run.
     """
     hermes = hermes_bin or resolve_hermes()
+    attempt_source = f"{source}-evalkit-{uuid.uuid4().hex}"
 
     flags: list[str] = []
     if yolo:
@@ -158,8 +160,8 @@ def _run_prompt_once(
         cmd += ["-s", ",".join(skills)]
     if profile:
         cmd += ["-p", profile]
-    if source:
-        cmd += ["--source", source]
+    if attempt_source:
+        cmd += ["--source", attempt_source]
     if max_turns is not None:
         cmd += ["--max-turns", str(max_turns)]
 
@@ -186,7 +188,11 @@ def _run_prompt_once(
                 result.stderr = stderr
                 result.returncode = proc.returncode if proc.returncode is not None else -1
                 result.error = "cancelled"
-                _attach_failure_context(result, hermes_bin=hermes)
+                _attach_failure_context(
+                    result,
+                    hermes_bin=hermes,
+                    attempt_source=attempt_source,
+                )
                 return result
             try:
                 stdout, stderr = proc.communicate(timeout=0.2)
@@ -200,12 +206,20 @@ def _run_prompt_once(
                     result.stderr = stderr
                     result.returncode = proc.returncode if proc.returncode is not None else -1
                     result.error = f"hermes run timed out after {timeout}s"
-                    _attach_failure_context(result, hermes_bin=hermes)
+                    _attach_failure_context(
+                        result,
+                        hermes_bin=hermes,
+                        attempt_source=attempt_source,
+                    )
                     return result
     except subprocess.TimeoutExpired:
         result.wall_clock = time.monotonic() - t0
         result.error = f"hermes run timed out after {timeout}s"
-        _attach_failure_context(result, hermes_bin=hermes)
+        _attach_failure_context(
+            result,
+            hermes_bin=hermes,
+            attempt_source=attempt_source,
+        )
         return result
     result.wall_clock = time.monotonic() - t0
 
@@ -250,12 +264,27 @@ def _is_too_many_requests_failure(result: RunResult) -> bool:
     return bool(_TOO_MANY_REQUESTS_RE.search(text))
 
 
-def _attach_failure_context(result: RunResult, *, hermes_bin: str) -> None:
+def _attach_failure_context(
+    result: RunResult,
+    *,
+    hermes_bin: str,
+    attempt_source: Optional[str] = None,
+) -> None:
     """Best-effort context for interrupted runs that otherwise look blank."""
     if result.stderr and result.session_id is None:
         m = _SESSION_ID_RE.search(result.stderr)
         if m:
             result.session_id = m.group(1)
+
+    if result.session_id is None and attempt_source:
+        try:
+            result.session = export_session_by_source(
+                attempt_source,
+                hermes_bin=hermes_bin,
+            )
+            result.session_id = result.session.id
+        except Exception as exc:  # noqa: BLE001 - diagnostic only
+            result.diagnostics = f"Session recovery by source failed: {exc}"
 
     if result.session_id and result.session is None:
         try:
