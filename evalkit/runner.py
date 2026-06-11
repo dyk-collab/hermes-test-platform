@@ -21,6 +21,8 @@ from .config import resolve_hermes
 from .session import Session, export_session
 
 _SESSION_ID_RE = re.compile(r"session_id:\s*(\S+)")
+_TOO_MANY_REQUESTS_RE = re.compile(r"too many requests", re.IGNORECASE)
+MAX_TOO_MANY_REQUESTS_RETRIES = 3
 
 # Defaults that make a run headless & reproducible. --ignore-rules keeps the
 # eval env clean (no AGENTS.md/SOUL.md/memory injection); --source tool keeps
@@ -40,6 +42,7 @@ class RunResult:
     stderr: str = ""
     error: Optional[str] = None  # populated on failure to run/parse
     diagnostics: str = ""  # session-scoped Hermes logs captured after a failure
+    retry_count: int = 0  # retries after the initial attempt
 
     @property
     def ok(self) -> bool:
@@ -70,7 +73,66 @@ def run_prompt(
     hermes_bin: Optional[str] = None,
     cancel_event: Optional[Event] = None,
 ) -> RunResult:
-    """Run one prompt and return a RunResult with the parsed session attached.
+    """Run one prompt, retrying model rate-limit failures up to three times."""
+    retry_count = 0
+    total_wall_clock = 0.0
+
+    while True:
+        result = _run_prompt_once(
+            prompt,
+            case_id=case_id,
+            model=model,
+            provider=provider,
+            toolsets=toolsets,
+            skills=skills,
+            profile=profile,
+            source=source,
+            max_turns=max_turns,
+            timeout=timeout,
+            yolo=yolo,
+            accept_hooks=accept_hooks,
+            ignore_rules=ignore_rules,
+            hermes_bin=hermes_bin,
+            cancel_event=cancel_event,
+        )
+        total_wall_clock += result.wall_clock or 0.0
+        result.wall_clock = total_wall_clock
+        result.retry_count = retry_count
+
+        if not _is_too_many_requests_failure(result):
+            return result
+        if retry_count >= MAX_TOO_MANY_REQUESTS_RETRIES:
+            return result
+        if cancel_event is not None and cancel_event.is_set():
+            return result
+
+        retry_count += 1
+        if cancel_event is not None:
+            if cancel_event.wait(timeout=2 ** (retry_count - 1)):
+                return result
+        else:
+            time.sleep(2 ** (retry_count - 1))
+
+
+def _run_prompt_once(
+    prompt: str,
+    *,
+    case_id: str = "adhoc",
+    model: Optional[str] = None,
+    provider: Optional[str] = None,
+    toolsets: Optional[list[str]] = None,
+    skills: Optional[list[str]] = None,
+    profile: Optional[str] = None,
+    source: str = "tool",
+    max_turns: Optional[int] = None,
+    timeout: float = 600.0,
+    yolo: bool = True,
+    accept_hooks: bool = True,
+    ignore_rules: bool = True,
+    hermes_bin: Optional[str] = None,
+    cancel_event: Optional[Event] = None,
+) -> RunResult:
+    """Run one prompt attempt and return its exported session and diagnostics.
 
     The three boolean flags map to hermes CLI switches (defaults keep the prior
     headless behaviour = all on); runner presets can toggle them per run.
@@ -176,6 +238,16 @@ def run_prompt(
         result.error = result.diagnostics or "session export failed"
 
     return result
+
+
+def _is_too_many_requests_failure(result: RunResult) -> bool:
+    """True only for Hermes exit-1 failures caused by model rate limiting."""
+    if result.returncode != 1:
+        return False
+    text = "\n".join(
+        part for part in (result.error, result.stderr, result.diagnostics) if part
+    )
+    return bool(_TOO_MANY_REQUESTS_RE.search(text))
 
 
 def _attach_failure_context(result: RunResult, *, hermes_bin: str) -> None:
