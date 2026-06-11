@@ -33,7 +33,8 @@ from .presets import (  # noqa: F401 - re-exported for the web layer
     save_preset,
 )
 from .report import build_report, render_markdown
-from .runner import run_prompt
+from .runner import collect_session_logs, run_prompt
+from .session import export_session, export_session_by_source
 
 OnEvent = Optional[Callable[[dict[str, Any]], None]]
 
@@ -308,13 +309,48 @@ def get_trajectory(run_id: str, case_id: str, runs_root: Optional[Path] = None) 
         "prompt": d.get("prompt", ""),
         "answer": run.answer,
         "session_id": run.session_id,
+        "session_source": run.session_source,
         "error": run.error,
         "diagnostics": run.diagnostics,
         "stderr": run.stderr,
+        "session_found": s is not None,
+        "session_has_messages": bool(messages),
         "graders": graded.get("grades") or d.get("graders") or [],
-        "metrics": graded.get("metrics") or metrics(run),
+        "metrics": metrics(run),
         "messages": messages,
     }
+
+
+def refresh_case_session(
+    run_id: str,
+    case_id: str,
+    runs_root: Optional[Path] = None,
+) -> dict[str, Any]:
+    """Reload one case's Session from Hermes and update its stored raw snapshot."""
+    root = runs_root or RUNS_DIR
+    raw_path = root / run_id / "raw" / f"{case_id}.json"
+    if not raw_path.is_file():
+        raise FileNotFoundError(f"no raw trajectory for {run_id}/{case_id}")
+
+    payload = json.loads(raw_path.read_text())
+    session_id = payload.get("session_id")
+    session_source = payload.get("session_source")
+    if session_id:
+        session = export_session(session_id)
+    elif session_source:
+        session = export_session_by_source(session_source)
+        session_id = session.id
+    else:
+        raise ValueError(
+            "this run has neither session_id nor session_source; "
+            "older runs cannot recover an interrupted Session"
+        )
+
+    payload["session_id"] = session_id
+    payload["session"] = session.raw
+    payload["diagnostics"] = collect_session_logs(session_id)
+    raw_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2))
+    return get_trajectory(run_id, case_id, runs_root=root)
 
 
 # ---- dataset authoring (guided builder; YAML stays the source of truth) -----

@@ -229,6 +229,16 @@ def api_case(run_id: str, case_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(exc))
 
 
+@app.post("/api/runs/{run_id}/cases/{case_id}/refresh-session")
+def api_refresh_case_session(run_id: str, case_id: str) -> dict[str, Any]:
+    try:
+        return service.refresh_case_session(run_id, case_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except (ValueError, RuntimeError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+
+
 # ---- write APIs (background jobs) ------------------------------------------
 
 

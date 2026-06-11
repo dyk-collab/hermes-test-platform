@@ -24,6 +24,7 @@ const fmtCost = (m) => {
 const setHint = (t) => ($("#conn-hint").textContent = t);
 
 let currentRunId = null;
+let currentCaseId = null;
 let META = { toolsets: [], grader_kinds: [], case_templates: [] };
 let PRESETS = []; // 缓存的 runner 预设列表
 let currentPreset = null; // 预设页正在编辑的预设名
@@ -194,12 +195,33 @@ function renderMessagesInto(box, messages, onAssert, { append = false } = {}) {
 // ---- 轨迹抽屉（历史报告）---------------------------------------------------
 async function openTrajectory(runId, caseId) {
   try {
+    currentCaseId = caseId;
     const t = await api(`/api/runs/${runId}/cases/${caseId}`);
     renderTrajectory(t);
     $("#drawer").classList.remove("hidden");
     $("#drawer-overlay").classList.remove("hidden");
   } catch (e) {
     setHint("读取轨迹失败：" + e.message);
+  }
+}
+
+async function refreshCurrentSession() {
+  if (!currentRunId || !currentCaseId) return;
+  const btn = $("#drawer-refresh-session");
+  btn.disabled = true;
+  btn.textContent = "加载中…";
+  try {
+    const t = await api(
+      `/api/runs/${encodeURIComponent(currentRunId)}/cases/${encodeURIComponent(currentCaseId)}/refresh-session`,
+      { method: "POST" },
+    );
+    renderTrajectory(t);
+    setHint(`已重新加载 Session ${t.session_id || ""}`);
+  } catch (e) {
+    setHint("加载 Session 失败：" + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "↻ 加载 Session";
   }
 }
 
@@ -283,6 +305,17 @@ function renderTrajectory(t) {
     const e = el("div", "msg tool");
     e.appendChild(el("div", "who", "Hermes 诊断日志"));
     e.appendChild(el("pre", "body", t.diagnostics));
+    box.appendChild(e);
+  }
+  if (t.error && !t.session_found) {
+    const e = el("div", "msg tool");
+    e.appendChild(el("div", "who", "Session 状态"));
+    e.appendChild(el("div", "body", "未恢复到 Hermes Session。进程可能在 Session 创建或数据库写入前被终止。"));
+    box.appendChild(e);
+  } else if (t.error && t.session_found && !t.session_has_messages) {
+    const e = el("div", "msg tool");
+    e.appendChild(el("div", "who", "Session 状态"));
+    e.appendChild(el("div", "body", `已恢复 Session ${t.session_id} 的元数据，但 Hermes 在终止前没有持久化消息轨迹。`));
     box.appendChild(e);
   }
   renderMessagesInto(box, t.messages, null, { append: true });
@@ -965,6 +998,7 @@ $("#stop-btn").onclick = cancelActiveJob;
 $("#regrade-btn").onclick = regrade;
 $("#refresh-runs").onclick = loadRuns;
 $("#drawer-close").onclick = closeDrawer;
+$("#drawer-refresh-session").onclick = refreshCurrentSession;
 $("#drawer-overlay").onclick = closeDrawer;
 document.addEventListener("keydown", (e) => e.key === "Escape" && closeDrawer());
 

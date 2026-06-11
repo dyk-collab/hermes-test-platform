@@ -44,6 +44,7 @@ class RunResult:
     error: Optional[str] = None  # populated on failure to run/parse
     diagnostics: str = ""  # session-scoped Hermes logs captured after a failure
     retry_count: int = 0  # retries after the initial attempt
+    session_source: str = ""  # unique source tag used to recover interrupted sessions
 
     @property
     def ok(self) -> bool:
@@ -166,6 +167,7 @@ def _run_prompt_once(
         cmd += ["--max-turns", str(max_turns)]
 
     result = RunResult(case_id=case_id, prompt=prompt)
+    result.session_source = attempt_source
     if cancel_event is not None and cancel_event.is_set():
         result.error = "cancelled before start"
         return result
@@ -277,14 +279,21 @@ def _attach_failure_context(
             result.session_id = m.group(1)
 
     if result.session_id is None and attempt_source:
-        try:
-            result.session = export_session_by_source(
-                attempt_source,
-                hermes_bin=hermes_bin,
-            )
-            result.session_id = result.session.id
-        except Exception as exc:  # noqa: BLE001 - diagnostic only
-            result.diagnostics = f"Session recovery by source failed: {exc}"
+        last_error: Exception | None = None
+        for attempt in range(10):
+            try:
+                result.session = export_session_by_source(
+                    attempt_source,
+                    hermes_bin=hermes_bin,
+                )
+                result.session_id = result.session.id
+                break
+            except Exception as exc:  # noqa: BLE001 - diagnostic only
+                last_error = exc
+                if attempt < 9:
+                    time.sleep(0.5)
+        if result.session is None and last_error is not None:
+            result.diagnostics = f"Session recovery by source failed: {last_error}"
 
     if result.session_id and result.session is None:
         try:
