@@ -2,7 +2,7 @@
 #
 # 完整信息用例：
 # - 必须加载 database-top-scene-handler skill。
-# - 必须调用 list_aksk_credentials 和 list_db_connection。
+# - 必须调用 list_aksk_credentials 和 list_database_info。
 #
 # 信息缺失用例：
 # - 必须加载 database-top-scene-handler skill。
@@ -24,7 +24,7 @@
       must_call: list_aksk_credentials
       expect_success: true
     - kind: tool_call
-      must_call: list_db_connection
+      must_call: list_database_info
       expect_success: true
 
 - id: cpu-instance-id-time-range
@@ -153,7 +153,7 @@
       expect_success: true
       must_not_call:
         - list_aksk_credentials
-        - list_db_connection
+        - list_database_info
     - kind: llm_judge
       rubric: "回答应明确询问数据库实例名称或实例 ID；不得假设具体实例，不得声称已经完成诊断。"
       pass_threshold: 7
@@ -169,7 +169,7 @@
       expect_success: true
       must_not_call:
         - list_aksk_credentials
-        - list_db_connection
+        - list_database_info
     - kind: llm_judge
       rubric: "回答应明确询问 CPU 故障发生的具体时间或时间范围；不得假设故障时间，不得声称已经完成诊断。"
       pass_threshold: 7
@@ -185,7 +185,7 @@
       expect_success: true
       must_not_call:
         - list_aksk_credentials
-        - list_db_connection
+        - list_database_info
     - kind: llm_judge
       rubric: "回答应询问具体发生了哪类故障或异常现象，例如 CPU、内存、磁盘、慢 SQL、复制延迟或复制异常；不得猜测故障类型。"
       pass_threshold: 7
@@ -201,7 +201,7 @@
       expect_success: true
       must_not_call:
         - list_aksk_credentials
-        - list_db_connection
+        - list_database_info
     - kind: llm_judge
       rubric: "回答应同时询问实例名称或实例 ID，以及慢 SQL 高频发生的具体时间或时间范围。"
       pass_threshold: 7
@@ -217,7 +217,7 @@
       expect_success: true
       must_not_call:
         - list_aksk_credentials
-        - list_db_connection
+        - list_database_info
     - kind: llm_judge
       rubric: "回答应询问故障发生时间或时间范围，并询问具体故障类型或异常现象。"
       pass_threshold: 7
@@ -233,7 +233,7 @@
       expect_success: true
       must_not_call:
         - list_aksk_credentials
-        - list_db_connection
+        - list_database_info
     - kind: llm_judge
       rubric: "回答应询问实例名称或实例 ID、故障发生时间或时间范围、以及具体故障类型或异常现象，不得直接猜测并执行诊断。"
       pass_threshold: 7
