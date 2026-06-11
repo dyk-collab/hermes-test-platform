@@ -4,9 +4,8 @@
 # - 必须加载 database-top-scene-handler skill。
 # - 必须调用 list_aksk_credentials 和 list_database_info。
 #
-# 信息缺失用例：
+# 信息缺失用例（仅检查工具行为，不评价追问文案）：
 # - 必须加载 database-top-scene-handler skill。
-# - 应追问缺失的实例、故障时间或故障类型。
 # - 信息补全前不应调用凭证和数据库连接工具。
 #
 # 当前不检查三个工具的调用顺序。
@@ -42,6 +41,21 @@
   prompt: "诊断一下实例 rds-aiops-0001，2026-06-06 16:00 至 17:00 CPU 周期性升高的问题。"
   graders: *complete_graders
 
+- id: cpu-load-high
+  type: tool_use
+  prompt: "rds-aiops-0001 在 2026-06-10 10:05 系统负载很高，CPU 长时间超过 90%，请排查。"
+  graders: *complete_graders
+
+- id: cpu-short-time-format
+  type: tool_use
+  prompt: "帮忙看下 rds-aiops-0001，6 月 10 日 18 点 20 分 CPU 突然冲高的问题。"
+  graders: *complete_graders
+
+- id: cpu-recent-relative-time
+  type: tool_use
+  prompt: "实例 rds-aiops-0001 今天上午 9 点左右 CPU 使用率异常升高，请诊断。"
+  graders: *complete_graders
+
 - id: memory-instance-name-exact-time
   type: tool_use
   prompt: "数据库实例 rds-aiops-0001 在 2026-06-08 11:20 内存使用率达到 98%，请做故障诊断。"
@@ -60,6 +74,21 @@
 - id: memory-colloquial
   type: tool_use
   prompt: "今天凌晨 01:30，实例 rds-aiops-0001 的内存突然爆了，帮我排查。"
+  graders: *complete_graders
+
+- id: memory-swap-high
+  type: tool_use
+  prompt: "2026-06-10 07:45，rds-aiops-0001 内存和 swap 使用率同时升高，请帮我分析。"
+  graders: *complete_graders
+
+- id: memory-free-low
+  type: tool_use
+  prompt: "实例 rds-aiops-0001 在 6 月 9 日晚上 21:10 可用内存接近 0，麻烦诊断。"
+  graders: *complete_graders
+
+- id: memory-time-window
+  type: tool_use
+  prompt: "请排查 rds-aiops-0001 在 2026/06/10 13:00-14:30 期间内存占用持续偏高的问题。"
   graders: *complete_graders
 
 - id: disk-instance-name-full
@@ -82,6 +111,21 @@
   prompt: "昨天 10:00 左右，实例 rds-aiops-0001 的磁盘突然增长了很多，帮我查下原因。"
   graders: *complete_graders
 
+- id: disk-iops-saturation
+  type: tool_use
+  prompt: "rds-aiops-0001 在 2026-06-10 16:25 磁盘 IOPS 打满了，请做故障诊断。"
+  graders: *complete_graders
+
+- id: disk-throughput-high
+  type: tool_use
+  prompt: "实例 rds-aiops-0001 今天 11:40 磁盘吞吐异常升高，数据库响应变慢，帮忙排查。"
+  graders: *complete_graders
+
+- id: disk-space-almost-full
+  type: tool_use
+  prompt: "6 月 9 日 23:00，rds-aiops-0001 剩余磁盘空间不足 5%，请分析原因。"
+  graders: *complete_graders
+
 - id: slow-sql-frequency-name
   type: tool_use
   prompt: "实例 rds-aiops-0001 在 2026-06-08 17:40 开始频繁出现慢 SQL，请定位原因。"
@@ -100,6 +144,21 @@
 - id: slow-sql-colloquial
   type: tool_use
   prompt: "昨天下午 3 点左右，实例 rds-aiops-0001 一直刷慢 SQL，看看发生了什么。"
+  graders: *complete_graders
+
+- id: slow-sql-count-spike
+  type: tool_use
+  prompt: "rds-aiops-0001 在 2026-06-10 12:15 每分钟慢 SQL 数量突然翻了几十倍，请诊断。"
+  graders: *complete_graders
+
+- id: slow-sql-duration-high
+  type: tool_use
+  prompt: "实例 rds-aiops-0001 今天 14:00 到 14:20 大量 SQL 执行超过 10 秒，帮我排查慢 SQL 高频问题。"
+  graders: *complete_graders
+
+- id: slow-query-log-surge
+  type: tool_use
+  prompt: "6 月 9 日 19:35，rds-aiops-0001 的慢查询日志突然大量增长，请分析。"
   graders: *complete_graders
 
 - id: replication-delay-name
@@ -122,6 +181,21 @@
   prompt: "2026-06-07 14:50，实例 rds-aiops-0001 数据比主库落后很多，确认是复制延迟，请做诊断。"
   graders: *complete_graders
 
+- id: replication-delay-seconds-behind
+  type: tool_use
+  prompt: "rds-aiops-0001 在 2026-06-10 08:50 的 Seconds_Behind_Master 超过 300，请排查复制延迟。"
+  graders: *complete_graders
+
+- id: replication-delay-growing
+  type: tool_use
+  prompt: "实例 rds-aiops-0001 今天 10:20 开始主从延迟不断增大，请诊断。"
+  graders: *complete_graders
+
+- id: replication-delay-time-window
+  type: tool_use
+  prompt: "请分析 rds-aiops-0001 在 6 月 9 日 12:00 至 13:30 期间的数据同步延迟问题。"
+  graders: *complete_graders
+
 - id: replication-error-name
   type: tool_use
   prompt: "实例 rds-aiops-0001 在 2026-06-08 02:12 复制中断并报错，请帮我定位原因。"
@@ -142,6 +216,21 @@
   prompt: "昨天凌晨 04:20，实例 rds-aiops-0001 的 IO 线程报错，主从复制失败，麻烦分析。"
   graders: *complete_graders
 
+- id: replication-error-broken
+  type: tool_use
+  prompt: "rds-aiops-0001 在 2026-06-10 03:05 主从链路断开，复制已经停止，请诊断。"
+  graders: *complete_graders
+
+- id: replication-error-binlog
+  type: tool_use
+  prompt: "实例 rds-aiops-0001 今天凌晨 02:40 报 binlog 复制错误，帮忙定位问题。"
+  graders: *complete_graders
+
+- id: replication-error-relay-log
+  type: tool_use
+  prompt: "6 月 9 日 05:15，rds-aiops-0001 出现 relay log 相关复制异常，请排查。"
+  graders: *complete_graders
+
 - id: missing-instance
   type: clarification
   prompt: "2026-06-08 14:35 数据库 CPU 使用率一直是 95%，帮我诊断。"
@@ -154,86 +243,88 @@
       must_not_call:
         - list_aksk_credentials
         - list_database_info
-    - kind: llm_judge
-      rubric: "回答应明确询问数据库实例名称或实例 ID；不得假设具体实例，不得声称已经完成诊断。"
-      pass_threshold: 7
 
 - id: missing-time
   type: clarification
   prompt: "实例 rds-aiops-0001 的 CPU 突然打满了，帮我分析。"
-  graders:
-    - kind: tool_call
-      must_call: skill_view
-      args_match:
-        name: database-top-scene-handler
-      expect_success: true
-      must_not_call:
-        - list_aksk_credentials
-        - list_database_info
-    - kind: llm_judge
-      rubric: "回答应明确询问 CPU 故障发生的具体时间或时间范围；不得假设故障时间，不得声称已经完成诊断。"
-      pass_threshold: 7
+  graders: *clarification_graders
 
 - id: missing-fault-type
   type: clarification
   prompt: "请帮我看一下实例 rds-aiops-0001 在 2026-06-08 14:35 的故障。"
-  graders:
-    - kind: tool_call
-      must_call: skill_view
-      args_match:
-        name: database-top-scene-handler
-      expect_success: true
-      must_not_call:
-        - list_aksk_credentials
-        - list_database_info
-    - kind: llm_judge
-      rubric: "回答应询问具体发生了哪类故障或异常现象，例如 CPU、内存、磁盘、慢 SQL、复制延迟或复制异常；不得猜测故障类型。"
-      pass_threshold: 7
+  graders: *clarification_graders
 
 - id: missing-instance-and-time
   type: clarification
   prompt: "数据库出现了大量慢 SQL，帮忙排查一下。"
-  graders:
-    - kind: tool_call
-      must_call: skill_view
-      args_match:
-        name: database-top-scene-handler
-      expect_success: true
-      must_not_call:
-        - list_aksk_credentials
-        - list_database_info
-    - kind: llm_judge
-      rubric: "回答应同时询问实例名称或实例 ID，以及慢 SQL 高频发生的具体时间或时间范围。"
-      pass_threshold: 7
+  graders: *clarification_graders
 
 - id: missing-time-and-fault
   type: clarification
   prompt: "帮我诊断一下实例 rds-aiops-0001。"
-  graders:
-    - kind: tool_call
-      must_call: skill_view
-      args_match:
-        name: database-top-scene-handler
-      expect_success: true
-      must_not_call:
-        - list_aksk_credentials
-        - list_database_info
-    - kind: llm_judge
-      rubric: "回答应询问故障发生时间或时间范围，并询问具体故障类型或异常现象。"
-      pass_threshold: 7
+  graders: *clarification_graders
 
 - id: missing-all-information
   type: clarification
   prompt: "帮我看看数据库怎么了。"
-  graders:
-    - kind: tool_call
-      must_call: skill_view
-      args_match:
-        name: database-top-scene-handler
-      expect_success: true
-      must_not_call:
-        - list_aksk_credentials
-        - list_database_info
-    - kind: llm_judge
-      rubric: "回答应询问实例名称或实例 ID、故障发生时间或时间范围、以及具体故障类型或异常现象，不得直接猜测并执行诊断。"
-      pass_threshold: 7
+  graders: *clarification_graders
+
+- id: missing-instance-memory
+  type: clarification
+  prompt: "2026-06-10 09:30 内存使用率达到 99%，请帮我诊断。"
+  graders: *clarification_graders
+
+- id: missing-instance-disk
+  type: clarification
+  prompt: "今天 10:20 数据库磁盘空间快满了，麻烦排查。"
+  graders: *clarification_graders
+
+- id: missing-instance-replication-delay
+  type: clarification
+  prompt: "2026-06-10 11:00 主从复制延迟超过 500 秒，请分析。"
+  graders: *clarification_graders
+
+- id: missing-instance-replication-error
+  type: clarification
+  prompt: "昨天凌晨 3 点数据库复制中断了，请诊断。"
+  graders: *clarification_graders
+
+- id: missing-time-memory
+  type: clarification
+  prompt: "实例 rds-aiops-0001 内存使用率一直很高，请排查。"
+  graders: *clarification_graders
+
+- id: missing-time-disk
+  type: clarification
+  prompt: "rds-aiops-0001 的磁盘空间不足，帮我诊断。"
+  graders: *clarification_graders
+
+- id: missing-time-slow-sql
+  type: clarification
+  prompt: "实例 rds-aiops-0001 最近慢 SQL 特别多，请分析。"
+  graders: *clarification_graders
+
+- id: missing-time-replication-delay
+  type: clarification
+  prompt: "rds-aiops-0001 出现了主从复制延迟，请帮忙排查。"
+  graders: *clarification_graders
+
+- id: missing-time-replication-error
+  type: clarification
+  prompt: "实例 rds-aiops-0001 发生复制异常，请诊断。"
+  graders: *clarification_graders
+
+- id: missing-fault-type-relative-time
+  type: clarification
+  prompt: "请检查实例 rds-aiops-0001 今天上午 10 点的异常。"
+  graders: *clarification_graders
+
+- id: missing-fault-type-time-range
+  type: clarification
+  prompt: "rds-aiops-0001 在 2026-06-10 08:00 到 09:00 有问题，帮我看看。"
+  graders: *clarification_graders
+
+- id: missing-instance-and-fault
+  type: clarification
+  prompt: "请帮我诊断 2026-06-10 15:30 发生的数据库故障。"
+  graders: *clarification_graders
