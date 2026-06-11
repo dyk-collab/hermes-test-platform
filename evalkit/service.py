@@ -368,10 +368,17 @@ def execute_rerun_failed(
 def execute_grade(
     run_dir: str,
     *,
+    concurrency: Optional[int] = None,
     cancel_event: Optional[Event] = None,
     on_event: OnEvent = None,
 ) -> dict[str, Any]:
-    """(Re)grade every stored case and write report.json/.md. Returns the report."""
+    """(Re)grade every stored case and write report.json/.md. Returns the report.
+
+    Grading runs concurrently when ``concurrency`` > 1 (an ``llm_judge`` case
+    spawns a ``hermes chat`` subprocess, so judging is the slow part). When
+    ``concurrency`` is None it inherits the run's own ``runner.concurrency`` from
+    the manifest, so re-grading parallelises the same way the run did.
+    """
     rd = Path(run_dir)
     raw_dir = rd / "raw"
     if not raw_dir.is_dir():
@@ -384,13 +391,14 @@ def execute_grade(
         else {}
     )
 
+    if concurrency is None:
+        concurrency = (manifest.get("runner") or {}).get("concurrency")
+    concurrency = max(1, int(concurrency or 1))
+
     raw_paths = sorted(raw_dir.glob("*.json"))
     _emit(on_event, type="grade_start", total=len(raw_paths))
-    graded: list[dict[str, Any]] = []
-    for raw_path in raw_paths:
-        if cancel_event is not None and cancel_event.is_set():
-            _emit(on_event, type="grade_cancelled", completed=len(graded), total=len(raw_paths))
-            break
+
+    def grade_one(raw_path: Path) -> dict[str, Any]:
         d, run = load_raw(raw_path)
         grades = grade_case(run, d.get("graders") or [])
         passed = bool(grades) and all(g.passed for g in grades)
@@ -409,9 +417,48 @@ def execute_grade(
         (graded_dir / f"{d['case_id']}.json").write_text(
             json.dumps(entry, ensure_ascii=False, indent=2)
         )
-        graded.append(entry)
         _emit(on_event, type="case_graded", case_id=d["case_id"], passed=passed)
+        return entry
 
+    # Results keyed by raw_paths index so the report stays in stable case order
+    # regardless of completion order under concurrency.
+    results: dict[int, dict[str, Any]] = {}
+
+    if concurrency == 1:
+        for idx, raw_path in enumerate(raw_paths):
+            if cancel_event is not None and cancel_event.is_set():
+                _emit(on_event, type="grade_cancelled", completed=len(results), total=len(raw_paths))
+                break
+            results[idx] = grade_one(raw_path)
+    else:
+        path_iter = iter(enumerate(raw_paths))
+        futures: dict[Future[dict[str, Any]], int] = {}
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            while len(futures) < concurrency:
+                try:
+                    idx, raw_path = next(path_iter)
+                except StopIteration:
+                    break
+                futures[pool.submit(grade_one, raw_path)] = idx
+
+            cancelled = False
+            while futures:
+                done, _ = wait(set(futures), return_when=FIRST_COMPLETED)
+                for fut in done:
+                    results[futures.pop(fut)] = fut.result()
+                if cancel_event is not None and cancel_event.is_set():
+                    cancelled = True
+                    continue
+                while len(futures) < concurrency:
+                    try:
+                        idx, raw_path = next(path_iter)
+                    except StopIteration:
+                        break
+                    futures[pool.submit(grade_one, raw_path)] = idx
+            if cancelled:
+                _emit(on_event, type="grade_cancelled", completed=len(results), total=len(raw_paths))
+
+    graded = [results[idx] for idx in sorted(results)]
     report = build_report(graded, manifest)
     (rd / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2))
     (rd / "report.md").write_text(render_markdown(report))

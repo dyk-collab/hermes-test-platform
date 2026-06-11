@@ -94,9 +94,15 @@ class EvalKit:
         console.print(f"\n[dim]run → {run_dir}[/]")
         return run_dir
 
-    def grade(self, run_dir: str) -> str:
-        """(Re)grade every stored case in a run dir and write report.json/.md."""
-        service.execute_grade(run_dir, on_event=_console_reporter({}))
+    def grade(self, run_dir: str, concurrency: Optional[int] = None) -> str:
+        """(Re)grade every stored case in a run dir and write report.json/.md.
+
+        Args:
+            run_dir: the run directory to (re)grade.
+            concurrency: cases to grade at once; default inherits the run's own
+                concurrency from its manifest (1 if unknown).
+        """
+        service.execute_grade(run_dir, concurrency=concurrency, on_event=_console_reporter({}))
         console.print(f"\n[dim]report → {Path(run_dir) / 'report.md'}[/]")
         return run_dir
 

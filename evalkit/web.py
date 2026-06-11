@@ -302,12 +302,13 @@ def api_delete_preset(name: str) -> dict[str, Any]:
 
 
 @app.post("/api/runs/{run_id}/grade")
-def api_start_grade(run_id: str) -> dict[str, Any]:
+def api_start_grade(run_id: str, concurrency: Optional[int] = None) -> dict[str, Any]:
     job_id = _new_job("grade")
     _run_in_thread(
         job_id,
         service.execute_grade,
         str(service.RUNS_DIR / run_id),
+        concurrency=concurrency,
         cancel_event=_get_cancel_event(job_id),
         on_event=_make_emitter(job_id),
     )
