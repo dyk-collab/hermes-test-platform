@@ -6,7 +6,8 @@ Spec fields (all optional except you'll usually set one of must_*):
   must_not_call:  str | [str]   none of these may appear
   args_match:     dict          some call to a must_call'd tool has args ⊇ this
                                 (subset match on parsed function.arguments)
-  expect_success: bool          the matched tool call's result must (not) be an error
+  expect_success: bool          at least one matched tool call's result must (not)
+                                be an error
 
 Data source: Session.all_tool_calls() + tool_result_for(). See PLAN §5.
 """
@@ -44,6 +45,13 @@ def _is_subset(want: dict[str, Any], got: dict[str, Any]) -> bool:
 def _result_is_error(content: str) -> bool:
     low = content.lower()
     return any(marker in low for marker in _ERROR_MARKERS)
+
+
+def _result_matches_expectation(session: "Session", call: "ToolCall", expect_success: bool) -> tuple[bool, str]:
+    res = session.tool_result_for(call.id)
+    content = (res.content if res else "") or ""
+    is_err = _result_is_error(content)
+    return ((not is_err) if expect_success else is_err), content
 
 
 @register("tool_call")
@@ -98,51 +106,54 @@ def tool_call_grader(run: "RunResult", spec: dict[str, Any]) -> GradeResult:
     # must_call'd tools (or any call if must_call wasn't given).
     if args_match is not None:
         candidates = [c for c in calls if (not must_call or c.name in must_call)]
-        matched: "ToolCall | None" = None
+        matched_calls: list["ToolCall"] = []
         for c in candidates:
             if _is_subset(args_match, c.arguments):
-                matched = c
-                break
-        if matched is None:
+                matched_calls.append(c)
+        if not matched_calls:
             return GradeResult(
                 "tool_call", False,
                 reason=f"no tool call had arguments ⊇ {args_match}",
                 details={"calls": [{"name": c.name, "arguments": c.arguments} for c in candidates]},
             )
-        checks.append(f"{matched.name} args matched {args_match}")
+        checks.append(f"{matched_calls[0].name} args matched {args_match}")
 
         if expect_success is not None:
-            res = session.tool_result_for(matched.id)
-            content = (res.content if res else "") or ""
-            is_err = _result_is_error(content)
-            ok = (not is_err) if expect_success else is_err
-            if not ok:
-                state = "errored" if is_err else "succeeded"
+            previews: list[str] = []
+            for call in matched_calls:
+                ok, content = _result_matches_expectation(session, call, bool(expect_success))
+                previews.append(content[:200])
+                if ok:
+                    checks.append(f"one matching result success={expect_success}")
+                    break
+            else:
+                state = "errored" if expect_success else "succeeded"
                 return GradeResult(
                     "tool_call", False,
-                    reason=f"expected tool result success={expect_success} but it {state}",
-                    details={"result_preview": content[:200]},
+                    reason=f"expected at least one matching tool result success={expect_success} but all {state}",
+                    details={"result_previews": previews},
                 )
-            checks.append(f"result success={expect_success}")
 
     elif expect_success is not None:
-        # No args_match: judge success on the first call of the (first) must_call tool.
+        # No args_match: judge success across all calls of the first target tool.
         target = must_call[0] if must_call else (names[0] if names else None)
         if target is None:
             return GradeResult("tool_call", False, reason="expect_success set but no tool was called")
-        call = next(c for c in calls if c.name == target)
-        res = session.tool_result_for(call.id)
-        content = (res.content if res else "") or ""
-        is_err = _result_is_error(content)
-        ok = (not is_err) if expect_success else is_err
-        if not ok:
-            state = "errored" if is_err else "succeeded"
+        target_calls = [c for c in calls if c.name == target]
+        previews: list[str] = []
+        for call in target_calls:
+            ok, content = _result_matches_expectation(session, call, bool(expect_success))
+            previews.append(content[:200])
+            if ok:
+                checks.append(f"{target} result success={expect_success}")
+                break
+        else:
+            state = "errored" if expect_success else "succeeded"
             return GradeResult(
                 "tool_call", False,
-                reason=f"expected {target} result success={expect_success} but it {state}",
-                details={"result_preview": content[:200]},
+                reason=f"expected at least one {target} result success={expect_success} but all {state}",
+                details={"result_previews": previews},
             )
-        checks.append(f"{target} result success={expect_success}")
 
     if not checks:
         return GradeResult(

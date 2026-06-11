@@ -135,12 +135,19 @@ function renderReport(report) {
 
   const tbody = $("#cases-tbody");
   tbody.innerHTML = "";
+  const graderLabel = (g) => {
+    let label = `${g.kind}${g.passed ? "✓" : "✗"}`;
+    if (g.kind === "llm_judge" && g.details?.score_10 != null) {
+      label += ` ${Number(g.details.score_10).toFixed(1)}/10`;
+    }
+    return label;
+  };
   (report.cases || []).forEach((c) => {
     const tr = el("tr");
     tr.onclick = () => openTrajectory(currentRunId, c.case_id);
     const m = c.metrics || {};
     const graders = (c.grades || [])
-      .map((g) => `<span class="grader-tag ${g.passed ? "ok" : "bad"}">${g.kind}${g.passed ? "✓" : "✗"}</span>`)
+      .map((g) => `<span class="grader-tag ${g.passed ? "ok" : "bad"}">${graderLabel(g)}</span>`)
       .join("");
     tr.innerHTML = `
       <td><b>${c.case_id}</b></td>
@@ -203,6 +210,7 @@ function closeDrawer() {
 // B 轨：grader 从裸 JSON 改为结构化卡片。
 // 兼容两种输入：① 打分结果（含 passed/score/reason/details）② 用例 grader 配置（kind + 字段）。
 const _GRADER_RESULT_KEYS = new Set(["kind", "passed", "score", "reason", "details"]);
+const _JUDGE_PROCESS_KEYS = new Set(["judge_prompt", "judge_raw", "judge_stderr"]);
 function renderGraderCard(g) {
   const card = el("div", "grader-card");
   const head = el("div", "grader-card-head");
@@ -214,16 +222,36 @@ function renderGraderCard(g) {
   if (g.reason) card.appendChild(el("div", "grader-reason", g.reason));
 
   // 打分结果的 details；或配置态的非 kind 字段，二者都用 pre 展示
-  const details = g.details && Object.keys(g.details).length ? g.details : null;
+  const rawDetails = g.details && Object.keys(g.details).length ? g.details : null;
+  const details = rawDetails ? Object.fromEntries(
+    Object.entries(rawDetails).filter(([k]) => !_JUDGE_PROCESS_KEYS.has(k))
+  ) : null;
   const config = {};
   Object.entries(g).forEach(([k, v]) => {
     if (!_GRADER_RESULT_KEYS.has(k)) config[k] = v;
   });
-  const blob = details || (Object.keys(config).length ? config : null);
+  const blob = details && Object.keys(details).length ? details : (Object.keys(config).length ? config : null);
   if (blob) {
     const d = el("details", "grader-details");
-    d.appendChild(el("summary", null, details ? "details" : "配置"));
+    d.appendChild(el("summary", null, rawDetails ? "评判结果" : "配置"));
     d.appendChild(el("pre", null, JSON.stringify(blob, null, 2)));
+    card.appendChild(d);
+  }
+  if (rawDetails?.judge_prompt || rawDetails?.judge_raw || rawDetails?.judge_stderr) {
+    const d = el("details", "grader-details grader-process");
+    d.appendChild(el("summary", null, "评判过程"));
+    if (rawDetails.judge_prompt) {
+      d.appendChild(el("div", "grader-process-label", "Judge prompt"));
+      d.appendChild(el("pre", null, rawDetails.judge_prompt));
+    }
+    if (rawDetails.judge_raw) {
+      d.appendChild(el("div", "grader-process-label", "Judge raw output"));
+      d.appendChild(el("pre", null, rawDetails.judge_raw));
+    }
+    if (rawDetails.judge_stderr) {
+      d.appendChild(el("div", "grader-process-label", "Judge stderr"));
+      d.appendChild(el("pre", null, rawDetails.judge_stderr));
+    }
     card.appendChild(d);
   }
   return card;
