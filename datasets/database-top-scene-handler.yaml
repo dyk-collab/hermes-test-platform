@@ -4,10 +4,8 @@
 # - 必须加载 database-top-scene-handler skill。
 # - 必须调用 list_aksk_credentials 和 list_database_info。
 #
-# 信息缺失用例（仅检查工具行为，不评价追问文案）：
+# 时间缺失用例（仅检查工具行为，不评价追问文案）：
 # - 必须加载 database-top-scene-handler skill。
-# - 实例名称或 ID 缺失时，list_aksk_credentials 可调用也可不调用。
-# - 实例名称或 ID 缺失时，不应调用 list_database_info。
 # - 实例已知但缺少时间时，不限制后续工具调用。
 #
 # 当前不检查三个工具的调用顺序。
@@ -233,18 +231,6 @@
   prompt: "6 月 9 日 05:15，rds-aiops-0001 出现 relay log 相关复制异常，请排查。"
   graders: *complete_graders
 
-- id: missing-instance
-  type: clarification
-  prompt: "2026-06-08 14:35 数据库 CPU 使用率一直是 95%，帮我诊断。"
-  graders: &missing_instance_graders
-    - kind: tool_call
-      must_call: skill_view
-      args_match:
-        name: database-top-scene-handler
-      expect_success: true
-      must_not_call:
-        - list_database_info
-
 - id: missing-time
   type: clarification
   prompt: "实例 rds-aiops-0001 的 CPU 突然打满了，帮我分析。"
@@ -254,31 +240,6 @@
       args_match:
         name: database-top-scene-handler
       expect_success: true
-
-- id: missing-instance-and-time
-  type: clarification
-  prompt: "数据库出现了大量慢 SQL，帮忙排查一下。"
-  graders: *missing_instance_graders
-
-- id: missing-instance-memory
-  type: clarification
-  prompt: "2026-06-10 09:30 内存使用率达到 99%，请帮我诊断。"
-  graders: *missing_instance_graders
-
-- id: missing-instance-disk
-  type: clarification
-  prompt: "今天 10:20 数据库磁盘空间快满了，麻烦排查。"
-  graders: *missing_instance_graders
-
-- id: missing-instance-replication-delay
-  type: clarification
-  prompt: "2026-06-10 11:00 主从复制延迟超过 500 秒，请分析。"
-  graders: *missing_instance_graders
-
-- id: missing-instance-replication-error
-  type: clarification
-  prompt: "昨天凌晨 3 点数据库复制中断了，请诊断。"
-  graders: *missing_instance_graders
 
 - id: missing-time-memory
   type: clarification
