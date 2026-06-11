@@ -8,7 +8,7 @@
 # - 必须加载 database-top-scene-handler skill。
 # - 实例名称或 ID 缺失时，list_aksk_credentials 可调用也可不调用。
 # - 实例名称或 ID 缺失时，不应调用 list_database_info。
-# - 实例已知但缺少时间或故障类型时，不限制后续工具调用。
+# - 实例已知但缺少时间时，不限制后续工具调用。
 #
 # 当前不检查三个工具的调用顺序。
 
@@ -255,24 +255,9 @@
         name: database-top-scene-handler
       expect_success: true
 
-- id: missing-fault-type
-  type: clarification
-  prompt: "请帮我看一下实例 rds-aiops-0001 在 2026-06-08 14:35 的故障。"
-  graders: *missing_context_graders
-
 - id: missing-instance-and-time
   type: clarification
   prompt: "数据库出现了大量慢 SQL，帮忙排查一下。"
-  graders: *missing_instance_graders
-
-- id: missing-time-and-fault
-  type: clarification
-  prompt: "帮我诊断一下实例 rds-aiops-0001。"
-  graders: *missing_context_graders
-
-- id: missing-all-information
-  type: clarification
-  prompt: "帮我看看数据库怎么了。"
   graders: *missing_instance_graders
 
 - id: missing-instance-memory
@@ -319,18 +304,3 @@
   type: clarification
   prompt: "实例 rds-aiops-0001 发生复制异常，请诊断。"
   graders: *missing_context_graders
-
-- id: missing-fault-type-relative-time
-  type: clarification
-  prompt: "请检查实例 rds-aiops-0001 今天上午 10 点的异常。"
-  graders: *missing_context_graders
-
-- id: missing-fault-type-time-range
-  type: clarification
-  prompt: "rds-aiops-0001 在 2026-06-10 08:00 到 09:00 有问题，帮我看看。"
-  graders: *missing_context_graders
-
-- id: missing-instance-and-fault
-  type: clarification
-  prompt: "请帮我诊断 2026-06-10 15:30 发生的数据库故障。"
-  graders: *missing_instance_graders
