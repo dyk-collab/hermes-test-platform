@@ -301,11 +301,9 @@ function eventLine(ev) {
     if (ev.ok) {
       line = `[${ev.i}/${ev.total}] ${ev.case_id} ✓ ${fmtSecs(ev.wall_clock)} · ${ev.session_id}`;
     } else {
-      const bits = [`[${ev.i}/${ev.total}] ${ev.case_id} ✗ 运行错误：${ev.error || "未知错误"}`];
+      const bits = [`[${ev.i}/${ev.total}] ${ev.case_id} ✗ 运行失败，详情请在历史记录中查看`];
       if (ev.wall_clock != null) bits.push(`耗时：${fmtSecs(ev.wall_clock)}`);
       if (ev.session_id) bits.push(`session_id：${ev.session_id}`);
-      const detail = tail(ev.diagnostics || ev.stderr);
-      if (detail) bits.push(detail);
       line = bits.join("\n");
     }
   }

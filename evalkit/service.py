@@ -6,7 +6,7 @@ same ``on_event`` progress stream. Events are plain dicts (JSON-friendly):
   {"type": "run_start",  "run_id", "run_dir", "total"}
   {"type": "case_start", "i", "total", "case_id"}
   {"type": "case_done",  "i", "total", "case_id", "ok", "wall_clock",
-                          "session_id", "error", "diagnostics", "stderr"}
+                          "session_id"}
   {"type": "grade_start", "total"}
   {"type": "case_graded", "case_id", "passed"}
   {"type": "graded",      "report"}        # final, carries the full report dict
@@ -126,9 +126,7 @@ def execute_run(
         save_raw(run_dir, case, run)
         _emit(
             on_event, type="case_done", i=i, total=len(cases), case_id=case.id,
-            ok=run.ok, wall_clock=run.wall_clock, session_id=run.session_id, error=run.error,
-            diagnostics=run.diagnostics[-4000:] if run.diagnostics else "",
-            stderr=run.stderr[-2000:] if run.stderr else "",
+            ok=run.ok, wall_clock=run.wall_clock, session_id=run.session_id,
         )
 
     if concurrency == 1:

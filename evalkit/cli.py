@@ -52,7 +52,11 @@ def _console_reporter(total_holder: dict[str, int]):
                     f"[green]ok[/] [dim]{ev['wall_clock']:.1f}s · {ev['session_id']}[/]"
                 )
             else:
-                console.print(f"[red]run-error[/] [dim]{ev['error']}[/]")
+                session = ev.get("session_id") or "-"
+                console.print(
+                    f"[red]run-error[/] [dim]details available in run history · "
+                    f"session {session}[/]"
+                )
         elif t == "graded":
             render_console(ev["report"], console)
 
