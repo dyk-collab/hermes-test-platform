@@ -101,24 +101,9 @@
   prompt: "请检查 rds-aiops-0001，2026-06-04 19:30 出现磁盘空间不足的问题。"
   graders: *complete_graders
 
-- id: disk-io-high
-  type: tool_use
-  prompt: "rds-aiops-0001 在 2026-06-07 15:00 到 15:25 磁盘 IO 特别高，业务查询明显变慢，请分析。"
-  graders: *complete_graders
-
 - id: disk-growth-colloquial
   type: tool_use
   prompt: "昨天 10:00 左右，实例 rds-aiops-0001 的磁盘突然增长了很多，帮我查下原因。"
-  graders: *complete_graders
-
-- id: disk-iops-saturation
-  type: tool_use
-  prompt: "rds-aiops-0001 在 2026-06-10 16:25 磁盘 IOPS 打满了，请做故障诊断。"
-  graders: *complete_graders
-
-- id: disk-throughput-high
-  type: tool_use
-  prompt: "实例 rds-aiops-0001 今天 11:40 磁盘吞吐异常升高，数据库响应变慢，帮忙排查。"
   graders: *complete_graders
 
 - id: disk-space-almost-full
