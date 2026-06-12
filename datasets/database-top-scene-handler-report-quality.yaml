@@ -1,0 +1,249 @@
+# database-top-scene-handler 诊断报告质量测试集
+#
+# 目的：
+# - 测试 Hermes 是否路由到 database-top-scene-handler skill。
+# - 测试 Hermes 对数据库 TOP 故障场景生成的诊断报告是否正确。
+# - 不测试 list_aksk_credentials / list_database_info 等 tool 路由；tool 路由测试放在 database-top-scene-handler.yaml。
+#
+# 每条用例必须包含：
+# - 实例名称：rds-aiops-0001
+# - 明确故障时间点
+# - 明确故障类型
+#
+# 评分规则：
+# - rubric 由你填写；当前用 <TODO: ...> 占位。
+# - pass_threshold 可按需调整，默认先放 7。
+
+- id: report-cpu-sustained-high
+  type: qa
+  prompt: "请诊断实例 rds-aiops-0001 在 2026-06-08 14:35 出现 CPU 使用率持续 95% 的故障，并给出诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该 CPU 持续高使用率场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-cpu-spike-to-100
+  type: qa
+  prompt: "实例 rds-aiops-0001 在 2026-06-10 09:20 CPU 使用率突然冲到 100%，请生成故障诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该 CPU 突增到 100% 场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-cpu-periodic-high
+  type: qa
+  prompt: "请分析实例 rds-aiops-0001 在 2026-06-11 16:00 发生 CPU 周期性升高的故障，并输出诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该 CPU 周期性升高场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-memory-usage-high
+  type: qa
+  prompt: "数据库实例 rds-aiops-0001 在 2026-06-08 11:20 内存使用率达到 98%，请给出故障诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该内存使用率过高场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-memory-oom-risk
+  type: qa
+  prompt: "实例 rds-aiops-0001 在 2026-06-09 03:18 出现疑似 OOM，内存几乎耗尽，请生成诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该疑似 OOM 场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-memory-gradual-growth
+  type: qa
+  prompt: "请诊断 rds-aiops-0001 在 2026-06-10 18:00 出现内存持续上涨且没有回落的故障，并输出报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该内存持续上涨场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-disk-space-high
+  type: qa
+  prompt: "实例 rds-aiops-0001 在 2026-06-08 08:45 出现磁盘使用率超过 90% 的故障，请生成诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该磁盘使用率过高场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-disk-iops-saturation
+  type: qa
+  prompt: "rds-aiops-0001 在 2026-06-10 16:25 磁盘 IOPS 打满，请分析故障原因并输出诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该磁盘 IOPS 打满场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-disk-throughput-high
+  type: qa
+  prompt: "实例 rds-aiops-0001 在 2026-06-11 11:40 磁盘吞吐异常升高并导致数据库响应变慢，请给出诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该磁盘吞吐异常升高场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-slow-sql-frequency-high
+  type: qa
+  prompt: "实例 rds-aiops-0001 在 2026-06-08 17:40 开始频繁出现慢 SQL，请生成慢 SQL 高频故障诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该慢 SQL 高频场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-slow-sql-count-spike
+  type: qa
+  prompt: "rds-aiops-0001 在 2026-06-10 12:15 每分钟慢 SQL 数量突然翻了几十倍，请输出诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该慢 SQL 数量突增场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-slow-sql-business-impact
+  type: qa
+  prompt: "2026-06-11 20:10，实例 rds-aiops-0001 的业务接口响应变慢，监控显示慢 SQL 高频出现，请给出诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该慢 SQL 高频影响业务场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-replication-delay-high
+  type: qa
+  prompt: "实例 rds-aiops-0001 在 2026-06-08 09:25 出现主从复制延迟，请生成复制延迟故障诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该主从复制延迟场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-replication-delay-600s
+  type: qa
+  prompt: "rds-aiops-0001 在 2026-06-10 21:00 复制延迟持续超过 600 秒，请分析原因并输出诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该复制延迟超过 600 秒场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-replication-delay-growing
+  type: qa
+  prompt: "实例 rds-aiops-0001 在 2026-06-11 10:20 主从延迟不断增大，请给出诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该主从延迟持续增大场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-replication-error-stopped
+  type: qa
+  prompt: "rds-aiops-0001 在 2026-06-08 02:12 复制中断并报错，请生成复制异常故障诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该复制中断报错场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-replication-error-sql-thread
+  type: qa
+  prompt: "实例 rds-aiops-0001 在 2026-06-09 06:30 SQL 线程停止，发生复制异常，请输出诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该复制 SQL 线程停止场景的诊断报告评分规则>"
+      pass_threshold: 7
+
+- id: report-replication-error-binlog
+  type: qa
+  prompt: "实例 rds-aiops-0001 在 2026-06-10 02:40 报 binlog 复制错误，请分析故障原因并给出诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: "<TODO: 填写该 binlog 复制错误场景的诊断报告评分规则>"
+      pass_threshold: 7
