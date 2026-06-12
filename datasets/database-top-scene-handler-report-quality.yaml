@@ -248,7 +248,7 @@
 
 - id: report-disk-iops-saturation
   type: qa
-  prompt: "rds-aiops-0001 在 2026-06-10 16:25 磁盘 IOPS 打满，请分析故障原因并输出诊断报告。"
+  prompt: "rds-aiops-0001 在 2026-06-10 16:25 磁盘打满，请分析故障原因并输出诊断报告。"
   graders:
     - kind: tool_call
       must_call: skill_view
