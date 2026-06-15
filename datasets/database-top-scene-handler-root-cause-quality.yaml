@@ -30,7 +30,7 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:00 对应的 CPU 具体故障原因>"
+      expected_root_cause: "<TODO: 填写 mock 字典 key=1781488800000 对应的 CPU 具体故障原因>"
       rubric: &cpu_root_cause_rubric >
         请从 0 到 10 分评价 Hermes 生成的诊断报告。
 
@@ -66,7 +66,7 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:05 对应的 CPU 具体故障原因>"
+      expected_root_cause: "<TODO: 填写 mock 字典 key=1781489100000 对应的 CPU 具体故障原因>"
       rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
@@ -80,7 +80,7 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:10 对应的 CPU 具体故障原因>"
+      expected_root_cause: "<TODO: 填写 mock 字典 key=1781489400000 对应的 CPU 具体故障原因>"
       rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
@@ -94,7 +94,7 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:15 对应的 CPU 具体故障原因>"
+      expected_root_cause: "<TODO: 填写 mock 字典 key=1781489700000 对应的 CPU 具体故障原因>"
       rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
@@ -108,7 +108,7 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:20 对应的 CPU 具体故障原因>"
+      expected_root_cause: "<TODO: 填写 mock 字典 key=1781490000000 对应的 CPU 具体故障原因>"
       rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
@@ -122,7 +122,7 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:25 对应的 CPU 具体故障原因>"
+      expected_root_cause: "<TODO: 填写 mock 字典 key=1781490300000 对应的 CPU 具体故障原因>"
       rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
@@ -136,7 +136,7 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:30 对应的 CPU 具体故障原因>"
+      expected_root_cause: "<TODO: 填写 mock 字典 key=1781490600000 对应的 CPU 具体故障原因>"
       rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
@@ -150,7 +150,7 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:35 对应的 CPU 具体故障原因>"
+      expected_root_cause: "<TODO: 填写 mock 字典 key=1781490900000 对应的 CPU 具体故障原因>"
       rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
@@ -164,7 +164,7 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:40 对应的 CPU 具体故障原因>"
+      expected_root_cause: "<TODO: 填写 mock 字典 key=1781491200000 对应的 CPU 具体故障原因>"
       rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
@@ -178,7 +178,7 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:45 对应的 CPU 具体故障原因>"
+      expected_root_cause: "<TODO: 填写 mock 字典 key=1781491500000 对应的 CPU 具体故障原因>"
       rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
@@ -192,6 +192,6 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:50 对应的 CPU 具体故障原因>"
+      expected_root_cause: "<TODO: 填写 mock 字典 key=1781491800000 对应的 CPU 具体故障原因>"
       rubric: *cpu_root_cause_rubric
       pass_threshold: 7
