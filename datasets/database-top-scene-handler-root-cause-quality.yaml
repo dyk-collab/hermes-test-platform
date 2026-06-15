@@ -1,22 +1,28 @@
-# database-top-scene-handler 具体故障原因诊断测试集
+# database-top-scene-handler CPU 具体故障原因诊断测试集
 #
 # 目的：
 # - 测试 Hermes 是否路由到 database-top-scene-handler skill。
-# - 测试 Hermes 是否能在诊断报告中识别出你定义的具体故障原因。
+# - 测试 Hermes 是否能根据后端 mock 数据诊断出你定义的 CPU 具体故障原因。
 # - 不测试 list_aksk_credentials / list_database_info 等 tool 路由；tool 路由测试放在 database-top-scene-handler.yaml。
+#
+# 后端 mock 约定：
+# - 你后端使用字典存放 mock CPU 故障。
+# - key 是故障时间点。
+# - value 是该时间点对应的 mock 故障原因。
+# - 每条用例的故障时间点都不同，方便你按 key 映射到具体故障。
 #
 # 每条用例必须包含：
 # - 实例名称：rds-aiops-0001
-# - 明确故障时间点
-# - 明确故障类型
+# - 明确 CPU 故障时间点
+# - 明确 CPU 故障类型
 #
-# 评分规则：
-# - 每条 rubric 中的具体故障原因使用 <TODO: ...> 占位，由你填写。
-# - pass_threshold 可按需调整，默认先放 7。
+# 需要你填写：
+# - expected_root_cause 中的 <TODO: ...>，填写对应 mock 字典 value。
+# - rubric 第 9 条中的 <TODO: ...>，建议填写同一个 mock 字典 value。
 
-- id: root-cause-cpu-sustained-high
+- id: root-cause-cpu-mock-01
   type: qa
-  prompt: "请诊断实例 rds-aiops-0001 在 2026-06-08 14:35 出现 CPU 使用率持续 95% 的故障，并给出诊断报告。"
+  prompt: "请诊断实例 rds-aiops-0001 在 2026-06-15 10:00 出现 CPU 使用率持续 95% 的故障，并给出诊断报告。"
   graders:
     - kind: tool_call
       must_call: skill_view
@@ -24,20 +30,20 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
+      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:00 对应的 CPU 具体故障原因>"
+      rubric: &cpu_root_cause_rubric >
         请从 0 到 10 分评价 Hermes 生成的诊断报告。
 
         满分标准：
         1. 明确识别故障实例为 rds-aiops-0001。
         2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为 CPU 使用率持续过高。
-        4. 报告应说明可能原因，例如慢 SQL、连接数升高、热点 SQL、后台任务、资源争用等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
+        3. 明确识别故障类型为 CPU 使用率过高。
+        4. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
+        5. 报告应给出排查结论或最可能原因。
+        6. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数或继续观察指标。
+        7. 不应编造没有依据的实例、时间、指标或根因。
+        8. 报告应明确分析出 CPU 故障原因，而不是只说明 CPU 高。
+        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的 CPU 具体故障原因>。
 
         扣分规则：
         - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
@@ -50,9 +56,9 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-cpu-spike-to-100
+- id: root-cause-cpu-mock-02
   type: qa
-  prompt: "实例 rds-aiops-0001 在 2026-06-10 09:20 CPU 使用率突然冲到 100%，请生成故障诊断报告。"
+  prompt: "实例 rds-aiops-0001 在 2026-06-15 10:05 CPU 使用率突然冲到 100%，请生成故障诊断报告。"
   graders:
     - kind: tool_call
       must_call: skill_view
@@ -60,35 +66,13 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
-        请从 0 到 10 分评价 Hermes 生成的诊断报告。
-
-        满分标准：
-        1. 明确识别故障实例为 rds-aiops-0001。
-        2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为 CPU 使用率突增到 100%。
-        4. 报告应说明可能原因，例如突发流量、热点 SQL、并发任务、统计信息异常、后台任务或资源争用等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
-
-        扣分规则：
-        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
-        - 只有通用建议、没有诊断分析，最高 5 分。
-        - 未结合工具结果或观测数据，最高 6 分。
-        - 根因明显错误，最高 4 分。
-        - 报告与 CPU 突增无关，最高 3 分。
-        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
-
-        7 分及以上为通过。
+      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:05 对应的 CPU 具体故障原因>"
+      rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
-- id: root-cause-cpu-periodic-high
+- id: root-cause-cpu-mock-03
   type: qa
-  prompt: "请分析实例 rds-aiops-0001 在 2026-06-11 16:00 发生 CPU 周期性升高的故障，并输出诊断报告。"
+  prompt: "请分析实例 rds-aiops-0001 在 2026-06-15 10:10 发生 CPU 周期性升高的故障，并输出诊断报告。"
   graders:
     - kind: tool_call
       must_call: skill_view
@@ -96,35 +80,13 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
-        请从 0 到 10 分评价 Hermes 生成的诊断报告。
-
-        满分标准：
-        1. 明确识别故障实例为 rds-aiops-0001。
-        2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为 CPU 周期性升高。
-        4. 报告应说明可能原因，例如定时任务、周期性批处理、计划任务、固定时段业务流量或周期性 SQL 执行等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
-
-        扣分规则：
-        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
-        - 只有通用建议、没有诊断分析，最高 5 分。
-        - 未结合工具结果或观测数据，最高 6 分。
-        - 根因明显错误，最高 4 分。
-        - 报告与 CPU 周期性升高无关，最高 3 分。
-        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
-
-        7 分及以上为通过。
+      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:10 对应的 CPU 具体故障原因>"
+      rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
-- id: root-cause-memory-usage-high
+- id: root-cause-cpu-mock-04
   type: qa
-  prompt: "数据库实例 rds-aiops-0001 在 2026-06-08 11:20 内存使用率达到 98%，请给出故障诊断报告。"
+  prompt: "rds-aiops-0001 在 2026-06-15 10:15 系统负载很高，CPU 长时间超过 90%，请生成诊断报告。"
   graders:
     - kind: tool_call
       must_call: skill_view
@@ -132,35 +94,13 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
-        请从 0 到 10 分评价 Hermes 生成的诊断报告。
-
-        满分标准：
-        1. 明确识别故障实例为 rds-aiops-0001。
-        2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为内存使用率过高。
-        4. 报告应说明可能原因，例如连接数升高、缓存占用增加、大查询、临时表、内存泄漏或参数配置不合理等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
-
-        扣分规则：
-        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
-        - 只有通用建议、没有诊断分析，最高 5 分。
-        - 未结合工具结果或观测数据，最高 6 分。
-        - 根因明显错误，最高 4 分。
-        - 报告与内存高使用率无关，最高 3 分。
-        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
-
-        7 分及以上为通过。
+      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:15 对应的 CPU 具体故障原因>"
+      rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
-- id: root-cause-memory-oom-risk
+- id: root-cause-cpu-mock-05
   type: qa
-  prompt: "实例 rds-aiops-0001 在 2026-06-09 03:18 出现疑似 OOM，内存几乎耗尽，请生成诊断报告。"
+  prompt: "请诊断实例 rds-aiops-0001 在 2026-06-15 10:20 出现 CPU 使用率异常升高并持续不下降的故障。"
   graders:
     - kind: tool_call
       must_call: skill_view
@@ -168,35 +108,13 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
-        请从 0 到 10 分评价 Hermes 生成的诊断报告。
-
-        满分标准：
-        1. 明确识别故障实例为 rds-aiops-0001。
-        2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为疑似 OOM 或内存耗尽。
-        4. 报告应说明可能原因，例如突发大查询、连接暴涨、临时对象过多、内存参数过大或进程异常占用等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
-
-        扣分规则：
-        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
-        - 只有通用建议、没有诊断分析，最高 5 分。
-        - 未结合工具结果或观测数据，最高 6 分。
-        - 根因明显错误，最高 4 分。
-        - 报告与疑似 OOM无关，最高 3 分。
-        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
-
-        7 分及以上为通过。
+      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:20 对应的 CPU 具体故障原因>"
+      rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
-- id: root-cause-memory-gradual-growth
+- id: root-cause-cpu-mock-06
   type: qa
-  prompt: "请诊断 rds-aiops-0001 在 2026-06-10 18:00 出现内存持续上涨且没有回落的故障，并输出报告。"
+  prompt: "实例 rds-aiops-0001 在 2026-06-15 10:25 CPU 使用率从正常水平快速升高到 98%，请给出故障诊断报告。"
   graders:
     - kind: tool_call
       must_call: skill_view
@@ -204,35 +122,13 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
-        请从 0 到 10 分评价 Hermes 生成的诊断报告。
-
-        满分标准：
-        1. 明确识别故障实例为 rds-aiops-0001。
-        2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为内存持续上涨且没有回落。
-        4. 报告应说明可能原因，例如连接未释放、缓存持续增长、长事务、大查询、内存泄漏或后台任务持续占用等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
-
-        扣分规则：
-        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
-        - 只有通用建议、没有诊断分析，最高 5 分。
-        - 未结合工具结果或观测数据，最高 6 分。
-        - 根因明显错误，最高 4 分。
-        - 报告与内存持续上涨无关，最高 3 分。
-        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
-
-        7 分及以上为通过。
+      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:25 对应的 CPU 具体故障原因>"
+      rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
-- id: root-cause-disk-space-high
+- id: root-cause-cpu-mock-07
   type: qa
-  prompt: "实例 rds-aiops-0001 在 2026-06-08 08:45 出现磁盘使用率超过 90% 的故障，请生成诊断报告。"
+  prompt: "请排查 rds-aiops-0001 在 2026-06-15 10:30 出现 CPU 使用率持续接近满载的故障，并输出诊断报告。"
   graders:
     - kind: tool_call
       must_call: skill_view
@@ -240,35 +136,13 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
-        请从 0 到 10 分评价 Hermes 生成的诊断报告。
-
-        满分标准：
-        1. 明确识别故障实例为 rds-aiops-0001。
-        2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为磁盘使用率过高。
-        4. 报告应说明可能原因，例如数据文件增长、日志增长、临时文件堆积、备份残留、binlog 或慢日志快速增长等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
-
-        扣分规则：
-        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
-        - 只有通用建议、没有诊断分析，最高 5 分。
-        - 未结合工具结果或观测数据，最高 6 分。
-        - 根因明显错误，最高 4 分。
-        - 报告与磁盘使用率过高无关，最高 3 分。
-        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
-
-        7 分及以上为通过。
+      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:30 对应的 CPU 具体故障原因>"
+      rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
-- id: root-cause-slow-sql-frequency-high
+- id: root-cause-cpu-mock-08
   type: qa
-  prompt: "实例 rds-aiops-0001 在 2026-06-08 17:40 开始频繁出现慢 SQL，请生成慢 SQL 高频故障诊断报告。"
+  prompt: "数据库实例 rds-aiops-0001 在 2026-06-15 10:35 CPU 使用率高于 90% 且业务响应变慢，请生成诊断报告。"
   graders:
     - kind: tool_call
       must_call: skill_view
@@ -276,35 +150,13 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
-        请从 0 到 10 分评价 Hermes 生成的诊断报告。
-
-        满分标准：
-        1. 明确识别故障实例为 rds-aiops-0001。
-        2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为慢 SQL 高频出现。
-        4. 报告应说明可能原因，例如执行计划变化、缺失索引、数据量增长、锁等待、资源瓶颈或业务流量突增等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
-
-        扣分规则：
-        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
-        - 只有通用建议、没有诊断分析，最高 5 分。
-        - 未结合工具结果或观测数据，最高 6 分。
-        - 根因明显错误，最高 4 分。
-        - 报告与慢 SQL 高频无关，最高 3 分。
-        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
-
-        7 分及以上为通过。
+      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:35 对应的 CPU 具体故障原因>"
+      rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
-- id: root-cause-slow-sql-count-spike
+- id: root-cause-cpu-mock-09
   type: qa
-  prompt: "rds-aiops-0001 在 2026-06-10 12:15 每分钟慢 SQL 数量突然翻了几十倍，请输出诊断报告。"
+  prompt: "实例 rds-aiops-0001 在 2026-06-15 10:40 出现 CPU 突然飙高并伴随查询变慢，请分析故障原因并输出报告。"
   graders:
     - kind: tool_call
       must_call: skill_view
@@ -312,35 +164,13 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
-        请从 0 到 10 分评价 Hermes 生成的诊断报告。
-
-        满分标准：
-        1. 明确识别故障实例为 rds-aiops-0001。
-        2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为慢 SQL 数量突增。
-        4. 报告应说明可能原因，例如突发流量、热点接口、执行计划退化、索引失效、锁等待或资源竞争等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
-
-        扣分规则：
-        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
-        - 只有通用建议、没有诊断分析，最高 5 分。
-        - 未结合工具结果或观测数据，最高 6 分。
-        - 根因明显错误，最高 4 分。
-        - 报告与慢 SQL 数量突增无关，最高 3 分。
-        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
-
-        7 分及以上为通过。
+      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:40 对应的 CPU 具体故障原因>"
+      rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
-- id: root-cause-slow-sql-business-impact
+- id: root-cause-cpu-mock-10
   type: qa
-  prompt: "2026-06-11 20:10，实例 rds-aiops-0001 的业务接口响应变慢，监控显示慢 SQL 高频出现，请给出诊断报告。"
+  prompt: "请诊断 rds-aiops-0001 在 2026-06-15 10:45 出现 CPU 使用率高峰持续超过 10 分钟的故障。"
   graders:
     - kind: tool_call
       must_call: skill_view
@@ -348,35 +178,13 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
-        请从 0 到 10 分评价 Hermes 生成的诊断报告。
-
-        满分标准：
-        1. 明确识别故障实例为 rds-aiops-0001。
-        2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为慢 SQL 高频并影响业务响应。
-        4. 报告应说明可能原因，例如热点业务 SQL、索引缺失、锁等待、资源瓶颈、执行计划异常或请求量突增等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
-
-        扣分规则：
-        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
-        - 只有通用建议、没有诊断分析，最高 5 分。
-        - 未结合工具结果或观测数据，最高 6 分。
-        - 根因明显错误，最高 4 分。
-        - 报告与慢 SQL 高频影响业务无关，最高 3 分。
-        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
-
-        7 分及以上为通过。
+      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:45 对应的 CPU 具体故障原因>"
+      rubric: *cpu_root_cause_rubric
       pass_threshold: 7
 
-- id: root-cause-replication-delay-high
+- id: root-cause-cpu-mock-11
   type: qa
-  prompt: "实例 rds-aiops-0001 在 2026-06-08 09:25 出现主从复制延迟，请生成复制延迟故障诊断报告。"
+  prompt: "实例 rds-aiops-0001 在 2026-06-15 10:50 CPU 使用率异常升高到 97%，请输出故障诊断报告。"
   graders:
     - kind: tool_call
       must_call: skill_view
@@ -384,208 +192,6 @@
         name: database-top-scene-handler
       expect_success: true
     - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
-        请从 0 到 10 分评价 Hermes 生成的诊断报告。
-
-        满分标准：
-        1. 明确识别故障实例为 rds-aiops-0001。
-        2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为主从复制延迟。
-        4. 报告应说明可能原因，例如主库写入突增、从库回放慢、大事务、网络抖动、从库资源瓶颈或复制线程阻塞等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
-
-        扣分规则：
-        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
-        - 只有通用建议、没有诊断分析，最高 5 分。
-        - 未结合工具结果或观测数据，最高 6 分。
-        - 根因明显错误，最高 4 分。
-        - 报告与复制延迟无关，最高 3 分。
-        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
-
-        7 分及以上为通过。
-      pass_threshold: 7
-
-- id: root-cause-replication-delay-600s
-  type: qa
-  prompt: "rds-aiops-0001 在 2026-06-10 21:00 复制延迟持续超过 600 秒，请分析原因并输出诊断报告。"
-  graders:
-    - kind: tool_call
-      must_call: skill_view
-      args_match:
-        name: database-top-scene-handler
-      expect_success: true
-    - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
-        请从 0 到 10 分评价 Hermes 生成的诊断报告。
-
-        满分标准：
-        1. 明确识别故障实例为 rds-aiops-0001。
-        2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为复制延迟持续超过 600 秒。
-        4. 报告应说明可能原因，例如大事务、批量写入、从库 SQL 线程回放慢、从库资源不足、网络异常或复制线程积压等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
-
-        扣分规则：
-        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
-        - 只有通用建议、没有诊断分析，最高 5 分。
-        - 未结合工具结果或观测数据，最高 6 分。
-        - 根因明显错误，最高 4 分。
-        - 报告与复制延迟超过 600 秒无关，最高 3 分。
-        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
-
-        7 分及以上为通过。
-      pass_threshold: 7
-
-- id: root-cause-replication-delay-growing
-  type: qa
-  prompt: "实例 rds-aiops-0001 在 2026-06-11 10:20 主从延迟不断增大，请给出诊断报告。"
-  graders:
-    - kind: tool_call
-      must_call: skill_view
-      args_match:
-        name: database-top-scene-handler
-      expect_success: true
-    - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
-        请从 0 到 10 分评价 Hermes 生成的诊断报告。
-
-        满分标准：
-        1. 明确识别故障实例为 rds-aiops-0001。
-        2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为主从延迟持续增大。
-        4. 报告应说明可能原因，例如写入速率超过回放能力、从库资源瓶颈、大事务、复制线程阻塞或网络传输异常等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
-
-        扣分规则：
-        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
-        - 只有通用建议、没有诊断分析，最高 5 分。
-        - 未结合工具结果或观测数据，最高 6 分。
-        - 根因明显错误，最高 4 分。
-        - 报告与主从延迟持续增大无关，最高 3 分。
-        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
-
-        7 分及以上为通过。
-      pass_threshold: 7
-
-- id: root-cause-replication-error-stopped
-  type: qa
-  prompt: "rds-aiops-0001 在 2026-06-08 02:12 复制中断并报错，请生成复制异常故障诊断报告。"
-  graders:
-    - kind: tool_call
-      must_call: skill_view
-      args_match:
-        name: database-top-scene-handler
-      expect_success: true
-    - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
-        请从 0 到 10 分评价 Hermes 生成的诊断报告。
-
-        满分标准：
-        1. 明确识别故障实例为 rds-aiops-0001。
-        2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为复制中断并报错。
-        4. 报告应说明可能原因，例如binlog 缺失、主从位点异常、权限问题、网络中断、数据冲突或复制线程异常退出等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
-
-        扣分规则：
-        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
-        - 只有通用建议、没有诊断分析，最高 5 分。
-        - 未结合工具结果或观测数据，最高 6 分。
-        - 根因明显错误，最高 4 分。
-        - 报告与复制中断报错无关，最高 3 分。
-        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
-
-        7 分及以上为通过。
-      pass_threshold: 7
-
-- id: root-cause-replication-error-sql-thread
-  type: qa
-  prompt: "实例 rds-aiops-0001 在 2026-06-09 06:30 SQL 线程停止，发生复制异常，请输出诊断报告。"
-  graders:
-    - kind: tool_call
-      must_call: skill_view
-      args_match:
-        name: database-top-scene-handler
-      expect_success: true
-    - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
-        请从 0 到 10 分评价 Hermes 生成的诊断报告。
-
-        满分标准：
-        1. 明确识别故障实例为 rds-aiops-0001。
-        2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为复制 SQL 线程停止。
-        4. 报告应说明可能原因，例如数据冲突、重复键、表结构不一致、relay log 异常、事务回放失败或复制配置问题等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
-
-        扣分规则：
-        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
-        - 只有通用建议、没有诊断分析，最高 5 分。
-        - 未结合工具结果或观测数据，最高 6 分。
-        - 根因明显错误，最高 4 分。
-        - 报告与复制 SQL 线程停止无关，最高 3 分。
-        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
-
-        7 分及以上为通过。
-      pass_threshold: 7
-
-- id: root-cause-replication-error-binlog
-  type: qa
-  prompt: "实例 rds-aiops-0001 在 2026-06-10 02:40 报 binlog 复制错误，请分析故障原因并给出诊断报告。"
-  graders:
-    - kind: tool_call
-      must_call: skill_view
-      args_match:
-        name: database-top-scene-handler
-      expect_success: true
-    - kind: llm_judge
-      expected_root_cause: "<TODO: 填写该用例的具体故障原因>"
-      rubric: >
-        请从 0 到 10 分评价 Hermes 生成的诊断报告。
-
-        满分标准：
-        1. 明确识别故障实例为 rds-aiops-0001。
-        2. 明确识别故障时间与用户问题中的故障时间一致。
-        3. 明确识别故障类型为 binlog 复制错误。
-        4. 报告应说明可能原因，例如binlog 缺失或损坏、位点错误、relay log 异常、网络传输问题或主从版本兼容问题等。
-        5. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
-        6. 报告应给出排查结论或最可能原因。
-        7. 报告应给出可执行的处理建议，例如优化 SQL、限制异常请求、扩容、调整参数、修复复制或继续观察指标。
-        8. 不应编造没有依据的实例、时间、指标或根因。
-        9. 报告应明确分析出预期具体故障原因：<TODO: 填写该用例期望 Hermes 诊断出的具体故障原因>。
-
-        扣分规则：
-        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
-        - 只有通用建议、没有诊断分析，最高 5 分。
-        - 未结合工具结果或观测数据，最高 6 分。
-        - 根因明显错误，最高 4 分。
-        - 报告与binlog 复制错误无关，最高 3 分。
-        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
-
-        7 分及以上为通过。
+      expected_root_cause: "<TODO: 填写 mock 字典 key=2026-06-15 10:50 对应的 CPU 具体故障原因>"
+      rubric: *cpu_root_cause_rubric
       pass_threshold: 7
