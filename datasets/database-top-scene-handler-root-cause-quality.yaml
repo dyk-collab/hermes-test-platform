@@ -20,7 +20,7 @@
 # - memory 用例 rubric 第 9 条中的 <TODO: ...>，填写对应 mock 字典 value。
 # - CPU 用例已经把预期根因直接写入 rubric 第 9 条。
 
-- id: root-cause-cpu-mock-01
+- id: root-cause-cpu-mock-01-1781488800000
   type: qa
   prompt: "请诊断实例 rds-aiops-0001 在 2026-06-15 10:00 出现 CPU 使用率持续 95% 的故障，并给出诊断报告。"
   graders:
@@ -55,7 +55,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-cpu-mock-02
+- id: root-cause-cpu-mock-02-1781489100000
   type: qa
   prompt: "实例 rds-aiops-0001 在 2026-06-15 10:05 CPU 使用率突然冲到 100%，请生成故障诊断报告。"
   graders:
@@ -90,7 +90,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-cpu-mock-03
+- id: root-cause-cpu-mock-03-1781489400000
   type: qa
   prompt: "请分析实例 rds-aiops-0001 在 2026-06-15 10:10 发生 CPU 周期性升高的故障，并输出诊断报告。"
   graders:
@@ -125,7 +125,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-cpu-mock-04
+- id: root-cause-cpu-mock-04-1781489700000
   type: qa
   prompt: "rds-aiops-0001 在 2026-06-15 10:15 系统负载很高，CPU 长时间超过 90%，请生成诊断报告。"
   graders:
@@ -160,7 +160,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-cpu-mock-05
+- id: root-cause-cpu-mock-05-1781490000000
   type: qa
   prompt: "请诊断实例 rds-aiops-0001 在 2026-06-15 10:20 出现 CPU 使用率异常升高并持续不下降的故障。"
   graders:
@@ -195,7 +195,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-cpu-mock-06
+- id: root-cause-cpu-mock-06-1781490300000
   type: qa
   prompt: "实例 rds-aiops-0001 在 2026-06-15 10:25 CPU 使用率从正常水平快速升高到 98%，请给出故障诊断报告。"
   graders:
@@ -230,7 +230,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-cpu-mock-07
+- id: root-cause-cpu-mock-07-1781490600000
   type: qa
   prompt: "请排查 rds-aiops-0001 在 2026-06-15 10:30 出现 CPU 使用率持续接近满载的故障，并输出诊断报告。"
   graders:
@@ -265,7 +265,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-cpu-mock-08
+- id: root-cause-cpu-mock-08-1781490900000
   type: qa
   prompt: "数据库实例 rds-aiops-0001 在 2026-06-15 10:35 CPU 使用率高于 90% 且业务响应变慢，请生成诊断报告。"
   graders:
@@ -300,7 +300,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-cpu-mock-09
+- id: root-cause-cpu-mock-09-1781491200000
   type: qa
   prompt: "实例 rds-aiops-0001 在 2026-06-15 10:40 出现 CPU 突然飙高并伴随查询变慢，请分析故障原因并输出报告。"
   graders:
@@ -335,7 +335,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-cpu-mock-10
+- id: root-cause-cpu-mock-10-1781491500000
   type: qa
   prompt: "请诊断 rds-aiops-0001 在 2026-06-15 10:45 出现 CPU 使用率高峰持续超过 10 分钟的故障。"
   graders:
@@ -370,7 +370,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-cpu-mock-11
+- id: root-cause-cpu-mock-11-1781491800000
   type: qa
   prompt: "实例 rds-aiops-0001 在 2026-06-15 10:50 CPU 使用率异常升高到 97%，请输出故障诊断报告。"
   graders:
@@ -405,7 +405,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-memory-mock-01
+- id: root-cause-memory-mock-01-1781492400000
   type: qa
   prompt: "请诊断实例 rds-aiops-0001 在 2026-06-15 11:00 出现内存使用率达到 98% 的故障，并给出诊断报告。"
   graders:
@@ -440,7 +440,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-memory-mock-02
+- id: root-cause-memory-mock-02-1781492700000
   type: qa
   prompt: "实例 rds-aiops-0001 在 2026-06-15 11:05 内存使用率突然升高到 99%，请生成故障诊断报告。"
   graders:
@@ -475,7 +475,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-memory-mock-03
+- id: root-cause-memory-mock-03-1781493000000
   type: qa
   prompt: "请分析实例 rds-aiops-0001 在 2026-06-15 11:10 发生内存持续上涨且没有回落的故障，并输出诊断报告。"
   graders:
@@ -510,7 +510,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-memory-mock-04
+- id: root-cause-memory-mock-04-1781493300000
   type: qa
   prompt: "rds-aiops-0001 在 2026-06-15 11:15 可用内存接近 0，请生成故障诊断报告。"
   graders:
@@ -545,7 +545,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-memory-mock-05
+- id: root-cause-memory-mock-05-1781493600000
   type: qa
   prompt: "请诊断实例 rds-aiops-0001 在 2026-06-15 11:20 出现内存异常升高并持续不下降的故障。"
   graders:
@@ -580,7 +580,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-memory-mock-06
+- id: root-cause-memory-mock-06-1781493900000
   type: qa
   prompt: "实例 rds-aiops-0001 在 2026-06-15 11:25 内存使用率从正常水平快速升高到 97%，请给出故障诊断报告。"
   graders:
@@ -615,7 +615,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-memory-mock-07
+- id: root-cause-memory-mock-07-1781494200000
   type: qa
   prompt: "请排查 rds-aiops-0001 在 2026-06-15 11:30 出现内存使用率持续接近满载的故障，并输出诊断报告。"
   graders:
@@ -650,7 +650,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-memory-mock-08
+- id: root-cause-memory-mock-08-1781494500000
   type: qa
   prompt: "数据库实例 rds-aiops-0001 在 2026-06-15 11:35 内存高于 90% 且业务响应变慢，请生成诊断报告。"
   graders:
@@ -685,7 +685,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-memory-mock-09
+- id: root-cause-memory-mock-09-1781494800000
   type: qa
   prompt: "实例 rds-aiops-0001 在 2026-06-15 11:40 出现内存突然飙高并伴随查询变慢，请分析故障原因并输出报告。"
   graders:
@@ -720,7 +720,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-memory-mock-10
+- id: root-cause-memory-mock-10-1781495100000
   type: qa
   prompt: "请诊断 rds-aiops-0001 在 2026-06-15 11:45 出现内存使用率高峰持续超过 10 分钟的故障。"
   graders:
@@ -755,7 +755,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-memory-mock-11
+- id: root-cause-memory-mock-11-1781495400000
   type: qa
   prompt: "实例 rds-aiops-0001 在 2026-06-15 11:50 内存使用率异常升高到 96%，请输出故障诊断报告。"
   graders:
@@ -790,7 +790,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-memory-mock-12
+- id: root-cause-memory-mock-12-1781495700000
   type: qa
   prompt: "请分析实例 rds-aiops-0001 在 2026-06-15 11:55 出现疑似 OOM，内存几乎耗尽的故障，并输出诊断报告。"
   graders:
@@ -825,7 +825,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-memory-mock-13
+- id: root-cause-memory-mock-13-1781496000000
   type: qa
   prompt: "实例 rds-aiops-0001 在 2026-06-15 12:00 内存和 swap 使用率同时升高，请生成故障诊断报告。"
   graders:
@@ -860,7 +860,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-disk-mock-01
+- id: root-cause-disk-mock-01-1781496300000
   type: qa
   prompt: "请诊断实例 rds-aiops-0001 在 2026-06-15 12:05 出现磁盘使用率超过 90% 的故障，并给出诊断报告。"
   graders:
@@ -895,7 +895,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-disk-mock-02
+- id: root-cause-disk-mock-02-1781496600000
   type: qa
   prompt: "实例 rds-aiops-0001 在 2026-06-15 12:10 磁盘空间不足，请生成故障诊断报告。"
   graders:
@@ -930,7 +930,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-disk-mock-03
+- id: root-cause-disk-mock-03-1781496900000
   type: qa
   prompt: "请分析实例 rds-aiops-0001 在 2026-06-15 12:15 出现剩余磁盘空间不足 5% 的故障，并输出诊断报告。"
   graders:
@@ -965,7 +965,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-disk-mock-04
+- id: root-cause-disk-mock-04-1781497200000
   type: qa
   prompt: "rds-aiops-0001 在 2026-06-15 12:20 磁盘使用率快速上涨并接近满载，请生成故障诊断报告。"
   graders:
@@ -1000,7 +1000,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-disk-mock-05
+- id: root-cause-disk-mock-05-1781497500000
   type: qa
   prompt: "请诊断实例 rds-aiops-0001 在 2026-06-15 12:25 出现磁盘空间即将用尽的故障。"
   graders:
@@ -1035,7 +1035,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-disk-mock-06
+- id: root-cause-disk-mock-06-1781497800000
   type: qa
   prompt: "实例 rds-aiops-0001 在 2026-06-15 12:30 磁盘使用率持续高于 95%，请给出故障诊断报告。"
   graders:
@@ -1070,7 +1070,7 @@
         7 分及以上为通过。
       pass_threshold: 7
 
-- id: root-cause-disk-mock-07
+- id: root-cause-disk-mock-07-1781498100000
   type: qa
   prompt: "请排查 rds-aiops-0001 在 2026-06-15 12:35 剩余磁盘空间快速下降的故障，并输出诊断报告。"
   graders:
@@ -1100,6 +1100,321 @@
         - 未结合工具结果或观测数据，最高 6 分。
         - 根因明显错误，最高 4 分。
         - 报告与磁盘空间满无关，最高 3 分。
+        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
+
+        7 分及以上为通过。
+      pass_threshold: 7
+
+- id: root-cause-replication-delay-mock-01-1781498400000
+  type: qa
+  prompt: "请诊断实例 rds-aiops-0001 在 2026-06-15 12:40 出现主从复制延迟的故障，并给出诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: >
+        请从 0 到 10 分评价 Hermes 生成的诊断报告。
+
+        满分标准：
+        1. 明确识别故障实例为 rds-aiops-0001。
+        2. 明确识别故障时间与用户问题中的故障时间一致。
+        3. 明确识别故障类型为主从复制延迟。
+        4. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
+        5. 报告应给出排查结论或最可能原因。
+        6. 报告应给出可执行的处理建议，例如处理大事务、优化写入压力、检查复制线程、扩容从库资源或继续观察复制指标。
+        7. 不应编造没有依据的实例、时间、指标或根因。
+        8. 报告应明确分析出复制延迟故障原因，而不是只说明存在延迟。
+        9. 报告应明确分析出预期具体故障原因：<TODO: 填写 mock 字典 key=1781498400000 对应的 replication_delay 具体故障原因>。
+
+        扣分规则：
+        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
+        - 只有通用建议、没有诊断分析，最高 5 分。
+        - 未结合工具结果或观测数据，最高 6 分。
+        - 根因明显错误，最高 4 分。
+        - 报告与主从复制延迟无关，最高 3 分。
+        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
+
+        7 分及以上为通过。
+      pass_threshold: 7
+
+- id: root-cause-replication-delay-mock-02-1781498700000
+  type: qa
+  prompt: "实例 rds-aiops-0001 在 2026-06-15 12:45 复制延迟持续超过 300 秒，请生成故障诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: >
+        请从 0 到 10 分评价 Hermes 生成的诊断报告。
+
+        满分标准：
+        1. 明确识别故障实例为 rds-aiops-0001。
+        2. 明确识别故障时间与用户问题中的故障时间一致。
+        3. 明确识别故障类型为主从复制延迟。
+        4. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
+        5. 报告应给出排查结论或最可能原因。
+        6. 报告应给出可执行的处理建议，例如处理大事务、优化写入压力、检查复制线程、扩容从库资源或继续观察复制指标。
+        7. 不应编造没有依据的实例、时间、指标或根因。
+        8. 报告应明确分析出复制延迟故障原因，而不是只说明存在延迟。
+        9. 报告应明确分析出预期具体故障原因：<TODO: 填写 mock 字典 key=1781498700000 对应的 replication_delay 具体故障原因>。
+
+        扣分规则：
+        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
+        - 只有通用建议、没有诊断分析，最高 5 分。
+        - 未结合工具结果或观测数据，最高 6 分。
+        - 根因明显错误，最高 4 分。
+        - 报告与主从复制延迟无关，最高 3 分。
+        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
+
+        7 分及以上为通过。
+      pass_threshold: 7
+
+- id: root-cause-replication-delay-mock-03-1781499000000
+  type: qa
+  prompt: "请分析实例 rds-aiops-0001 在 2026-06-15 12:50 出现 Seconds_Behind_Master 持续升高的复制延迟故障，并输出诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: >
+        请从 0 到 10 分评价 Hermes 生成的诊断报告。
+
+        满分标准：
+        1. 明确识别故障实例为 rds-aiops-0001。
+        2. 明确识别故障时间与用户问题中的故障时间一致。
+        3. 明确识别故障类型为主从复制延迟。
+        4. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
+        5. 报告应给出排查结论或最可能原因。
+        6. 报告应给出可执行的处理建议，例如处理大事务、优化写入压力、检查复制线程、扩容从库资源或继续观察复制指标。
+        7. 不应编造没有依据的实例、时间、指标或根因。
+        8. 报告应明确分析出复制延迟故障原因，而不是只说明存在延迟。
+        9. 报告应明确分析出预期具体故障原因：<TODO: 填写 mock 字典 key=1781499000000 对应的 replication_delay 具体故障原因>。
+
+        扣分规则：
+        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
+        - 只有通用建议、没有诊断分析，最高 5 分。
+        - 未结合工具结果或观测数据，最高 6 分。
+        - 根因明显错误，最高 4 分。
+        - 报告与主从复制延迟无关，最高 3 分。
+        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
+
+        7 分及以上为通过。
+      pass_threshold: 7
+
+- id: root-cause-replication-delay-mock-04-1781499300000
+  type: qa
+  prompt: "rds-aiops-0001 在 2026-06-15 12:55 主从延迟不断增大，请生成复制延迟故障诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: >
+        请从 0 到 10 分评价 Hermes 生成的诊断报告。
+
+        满分标准：
+        1. 明确识别故障实例为 rds-aiops-0001。
+        2. 明确识别故障时间与用户问题中的故障时间一致。
+        3. 明确识别故障类型为主从复制延迟。
+        4. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
+        5. 报告应给出排查结论或最可能原因。
+        6. 报告应给出可执行的处理建议，例如处理大事务、优化写入压力、检查复制线程、扩容从库资源或继续观察复制指标。
+        7. 不应编造没有依据的实例、时间、指标或根因。
+        8. 报告应明确分析出复制延迟故障原因，而不是只说明存在延迟。
+        9. 报告应明确分析出预期具体故障原因：<TODO: 填写 mock 字典 key=1781499300000 对应的 replication_delay 具体故障原因>。
+
+        扣分规则：
+        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
+        - 只有通用建议、没有诊断分析，最高 5 分。
+        - 未结合工具结果或观测数据，最高 6 分。
+        - 根因明显错误，最高 4 分。
+        - 报告与主从复制延迟无关，最高 3 分。
+        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
+
+        7 分及以上为通过。
+      pass_threshold: 7
+
+- id: root-cause-replication-delay-mock-05-1781499600000
+  type: qa
+  prompt: "请诊断实例 rds-aiops-0001 在 2026-06-15 13:00 出现从库数据同步明显落后的复制延迟故障。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: >
+        请从 0 到 10 分评价 Hermes 生成的诊断报告。
+
+        满分标准：
+        1. 明确识别故障实例为 rds-aiops-0001。
+        2. 明确识别故障时间与用户问题中的故障时间一致。
+        3. 明确识别故障类型为主从复制延迟。
+        4. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
+        5. 报告应给出排查结论或最可能原因。
+        6. 报告应给出可执行的处理建议，例如处理大事务、优化写入压力、检查复制线程、扩容从库资源或继续观察复制指标。
+        7. 不应编造没有依据的实例、时间、指标或根因。
+        8. 报告应明确分析出复制延迟故障原因，而不是只说明存在延迟。
+        9. 报告应明确分析出预期具体故障原因：<TODO: 填写 mock 字典 key=1781499600000 对应的 replication_delay 具体故障原因>。
+
+        扣分规则：
+        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
+        - 只有通用建议、没有诊断分析，最高 5 分。
+        - 未结合工具结果或观测数据，最高 6 分。
+        - 根因明显错误，最高 4 分。
+        - 报告与主从复制延迟无关，最高 3 分。
+        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
+
+        7 分及以上为通过。
+      pass_threshold: 7
+
+- id: root-cause-replication-delay-mock-06-1781499900000
+  type: qa
+  prompt: "实例 rds-aiops-0001 在 2026-06-15 13:05 复制延迟超过 600 秒，请给出故障诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: >
+        请从 0 到 10 分评价 Hermes 生成的诊断报告。
+
+        满分标准：
+        1. 明确识别故障实例为 rds-aiops-0001。
+        2. 明确识别故障时间与用户问题中的故障时间一致。
+        3. 明确识别故障类型为主从复制延迟。
+        4. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
+        5. 报告应给出排查结论或最可能原因。
+        6. 报告应给出可执行的处理建议，例如处理大事务、优化写入压力、检查复制线程、扩容从库资源或继续观察复制指标。
+        7. 不应编造没有依据的实例、时间、指标或根因。
+        8. 报告应明确分析出复制延迟故障原因，而不是只说明存在延迟。
+        9. 报告应明确分析出预期具体故障原因：<TODO: 填写 mock 字典 key=1781499900000 对应的 replication_delay 具体故障原因>。
+
+        扣分规则：
+        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
+        - 只有通用建议、没有诊断分析，最高 5 分。
+        - 未结合工具结果或观测数据，最高 6 分。
+        - 根因明显错误，最高 4 分。
+        - 报告与主从复制延迟无关，最高 3 分。
+        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
+
+        7 分及以上为通过。
+      pass_threshold: 7
+
+- id: root-cause-replication-delay-mock-07-1781500200000
+  type: qa
+  prompt: "请排查 rds-aiops-0001 在 2026-06-15 13:10 主从复制延迟反复升高的故障，并输出诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: >
+        请从 0 到 10 分评价 Hermes 生成的诊断报告。
+
+        满分标准：
+        1. 明确识别故障实例为 rds-aiops-0001。
+        2. 明确识别故障时间与用户问题中的故障时间一致。
+        3. 明确识别故障类型为主从复制延迟。
+        4. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
+        5. 报告应给出排查结论或最可能原因。
+        6. 报告应给出可执行的处理建议，例如处理大事务、优化写入压力、检查复制线程、扩容从库资源或继续观察复制指标。
+        7. 不应编造没有依据的实例、时间、指标或根因。
+        8. 报告应明确分析出复制延迟故障原因，而不是只说明存在延迟。
+        9. 报告应明确分析出预期具体故障原因：<TODO: 填写 mock 字典 key=1781500200000 对应的 replication_delay 具体故障原因>。
+
+        扣分规则：
+        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
+        - 只有通用建议、没有诊断分析，最高 5 分。
+        - 未结合工具结果或观测数据，最高 6 分。
+        - 根因明显错误，最高 4 分。
+        - 报告与主从复制延迟无关，最高 3 分。
+        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
+
+        7 分及以上为通过。
+      pass_threshold: 7
+
+- id: root-cause-replication-delay-mock-08-1781500500000
+  type: qa
+  prompt: "数据库实例 rds-aiops-0001 在 2026-06-15 13:15 出现复制延迟持续增长，请生成诊断报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: >
+        请从 0 到 10 分评价 Hermes 生成的诊断报告。
+
+        满分标准：
+        1. 明确识别故障实例为 rds-aiops-0001。
+        2. 明确识别故障时间与用户问题中的故障时间一致。
+        3. 明确识别故障类型为主从复制延迟。
+        4. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
+        5. 报告应给出排查结论或最可能原因。
+        6. 报告应给出可执行的处理建议，例如处理大事务、优化写入压力、检查复制线程、扩容从库资源或继续观察复制指标。
+        7. 不应编造没有依据的实例、时间、指标或根因。
+        8. 报告应明确分析出复制延迟故障原因，而不是只说明存在延迟。
+        9. 报告应明确分析出预期具体故障原因：<TODO: 填写 mock 字典 key=1781500500000 对应的 replication_delay 具体故障原因>。
+
+        扣分规则：
+        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
+        - 只有通用建议、没有诊断分析，最高 5 分。
+        - 未结合工具结果或观测数据，最高 6 分。
+        - 根因明显错误，最高 4 分。
+        - 报告与主从复制延迟无关，最高 3 分。
+        - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
+
+        7 分及以上为通过。
+      pass_threshold: 7
+
+- id: root-cause-replication-delay-mock-09-1781500800000
+  type: qa
+  prompt: "实例 rds-aiops-0001 在 2026-06-15 13:20 主从同步延迟明显增大，请分析故障原因并输出报告。"
+  graders:
+    - kind: tool_call
+      must_call: skill_view
+      args_match:
+        name: database-top-scene-handler
+      expect_success: true
+    - kind: llm_judge
+      rubric: >
+        请从 0 到 10 分评价 Hermes 生成的诊断报告。
+
+        满分标准：
+        1. 明确识别故障实例为 rds-aiops-0001。
+        2. 明确识别故障时间与用户问题中的故障时间一致。
+        3. 明确识别故障类型为主从复制延迟。
+        4. 报告应结合可观测数据或工具结果进行分析，不能只给泛泛建议。
+        5. 报告应给出排查结论或最可能原因。
+        6. 报告应给出可执行的处理建议，例如处理大事务、优化写入压力、检查复制线程、扩容从库资源或继续观察复制指标。
+        7. 不应编造没有依据的实例、时间、指标或根因。
+        8. 报告应明确分析出复制延迟故障原因，而不是只说明存在延迟。
+        9. 报告应明确分析出预期具体故障原因：<TODO: 填写 mock 字典 key=1781500800000 对应的 replication_delay 具体故障原因>。
+
+        扣分规则：
+        - 缺少实例、时间或故障类型，每项扣 1 到 2 分。
+        - 只有通用建议、没有诊断分析，最高 5 分。
+        - 未结合工具结果或观测数据，最高 6 分。
+        - 根因明显错误，最高 4 分。
+        - 报告与主从复制延迟无关，最高 3 分。
         - 未识别或错误识别预期具体故障原因，最高 6 分；如果其他分析也明显不足，最高 4 分。
 
         7 分及以上为通过。
